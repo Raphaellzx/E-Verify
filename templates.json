@@ -1,0 +1,114 @@
+{
+  "baidu_search": {
+    "name": "baidu_search",
+    "description": "百度搜索核查模板",
+    "url_pattern": "https://www.baidu.com/s?wd={}",
+    "category": "search",
+    "InsertContext": "百度（https://www.baidu.com/s）"
+  },
+  "mee": {
+    "name": "mee",
+    "description": "中华人民共和国生态环境部网站",
+    "url_pattern": "https://www.mee.gov.cn/searchnew/?searchword={}",
+    "category": "government",
+    "InsertContext": "中华人民共和国生态环境部网站（https://www.mee.gov.cn）"
+  },
+  "mofcom": {
+    "name": "mofcom",
+    "description": "中华人民共和国商务部网站",
+    "url_pattern": "https://search.mofcom.gov.cn/allSearch/?siteId=0&keyWordType=title&acSuggest={}",
+    "category": "government",
+    "InsertContext": "中华人民共和国商务部网站（https://search.mofcom.gov.cn）"
+  },
+  "safe": {
+    "name": "safe",
+    "description": "国家外汇管理局网站",
+    "url_pattern": "http://www.safe.gov.cn/safe/search/index.html?q={}&siteid=safe&order=releasetime",
+    "category": "government",
+    "InsertContext": "国家外汇管理局网站（http://www.safe.gov.cn）"
+  },
+  "pbc": {
+    "name": "pbc",
+    "description": "中国人民银行网站",
+    "url_pattern": "https://wzdig.pbc.gov.cn/search/pcRender?sr=score+desc&pageId=c177a85bd02b4114bebebd210809f691&ext=&pNo=1&q={}",
+    "category": "government",
+    "InsertContext": "中国人民银行网站（https://wzdig.pbc.gov.cn）"
+  },
+  "nfra": {
+    "name": "nfra",
+    "description": "国家金融监督管理总局",
+    "url_pattern": "https://www.nfra.gov.cn/cn/view/pages/index/jiansuo.html?keyWords={}",
+    "category": "government",
+    "InsertContext": "国家金融监督管理总局（https://www.nfra.gov.cn/cn/view/pages/index/jiansuo.html）"
+  },
+  "salt_association": {
+    "name": "salt_association",
+    "description": "中国盐业协会",
+    "url_pattern": "https://www.cnsalt.cn/index/index/search.html?q={}",
+    "category": "association",
+    "InsertContext": "中国盐业协会（https://www.cnsalt.cn）"
+  },
+  "stats": {
+    "name": "stats",
+    "description": "国家统计局网站",
+    "url_pattern": "https://www.stats.gov.cn/search/s?qt={}",
+    "category": "government",
+    "InsertContext": "国家统计局网站（https://www.stats.gov.cn）"
+  },
+  "nea": {
+    "name": "nea",
+    "description": "国家能源局网站",
+    "url_pattern": "https://www.nea.gov.cn/search.htm?kw={}",
+    "category": "government",
+    "InsertContext": "国家能源局网站（https://www.nea.gov.cn）"
+  },
+  "samr": {
+    "name": "samr",
+    "description": "国家市场监督管理总局",
+    "url_pattern": "https://www.samr.gov.cn/api-gateway/jpaas-jsearch-web-server/search?serviceId=db6d646f22e541d7a303940a8e8623cc&cateid=aef29dab559a4e9db9da54ff2e1eb92b&sortType=2&q={}",
+    "category": "government",
+    "InsertContext": "国家市场监督管理总局（https://www.samr.gov.cn）"
+  },
+  "moa": {
+    "name": "moa",
+    "description": "国家农业农村部网站",
+    "url_pattern": "https://www.moa.gov.cn/so/s?qt={}",
+    "category": "government",
+    "InsertContext": "国家农业农村部网站（https://www.moa.gov.cn）"
+  },
+  "mohurd": {
+    "name": "mohurd",
+    "description": "中华人民共和国住房和城乡建设部",
+    "url_pattern": "https://www.mohurd.gov.cn/api-gateway/jpaas-jsearch-web-server/search?serviceId=e2f3058e2a3b4f8abc93eb76e739e3e7&websiteid=&cateid=6ca0f12c0f0642ab8b1dc17028e12ea1&q={}",
+    "category": "government",
+    "InsertContext": "中华人民共和国住房和城乡建设部（https://www.mohurd.gov.cn）"
+  },
+  "jzsc": {
+    "name": "jzsc",
+    "description": "全国建筑市场监管公共服务平台",
+    "url_pattern": "https://jzsc.mohurd.gov.cn/data/company?complexname={}",
+    "category": "government",
+    "InsertContext": "全国建筑市场监管公共服务平台（https://jzsc.mohurd.gov.cn）"
+  },
+  "mohrss": {
+    "name": "mohrss",
+    "description": "中华人民共和国人力资源和社会保障部网站",
+    "url_pattern": "https://www.mohrss.gov.cn/hsearch/?searchword={}",
+    "category": "government",
+    "InsertContext": "中华人民共和国人力资源和社会保障部网站（https://www.mohrss.gov.cn/hsearch/）"
+  },
+    "cec": {
+    "name": "cec",
+    "description": "中国电力企业联合会网站",
+    "url_pattern": "https://cec.org.cn/search/index.html?search={}",
+    "category": "association",
+    "InsertContext": "中国电力企业联合会网站（https://cec.org.cn）"
+  },
+    "nmpa": {
+    "name": "nmpa",
+    "description": "国家药品监督管理局",
+    "url_pattern": "https://www.nmpa.gov.cn/so/s?tab=all&qt={}",
+    "category": "government",
+    "InsertContext": "国家药品监督管理局（https://www.nmpa.gov.cn）"
+  }
+}

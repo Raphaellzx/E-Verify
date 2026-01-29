@@ -1,0 +1,29 @@
+﻿# Python 缓存文件
+__pycache__/
+*.py[cod]
+*.class
+
+# 虚拟环境（uv 创建的 venv）
+.venv/
+venv/
+env/
+
+# 环境变量文件
+.env
+.env.local
+
+# 日志文件
+*.log
+
+# 打包产物
+dist/
+build/
+*.egg-info/
+
+# 运行结果文件
+output/
+reports/
+模板/
+
+# 对话文件
+.claude/

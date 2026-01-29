@@ -1,0 +1,20 @@
+[project]
+name = "everify"
+version = "0.1.0"
+description = "网页核查自动化项目 - 自动访问网页查询主体信息并生成带时间水印的Word报告"
+readme = "README.md"
+requires-python = ">=3.10.19"
+dependencies = [
+    "playwright>=1.40.0",
+    "python-docx>=0.8.11",
+    "Pillow>=10.0.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+everify = "everify.main:main"

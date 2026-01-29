@@ -1,0 +1,17 @@
+4.中华人民共和国国家发展和改革委员会网站（https://so.ndrc.gov.cn/s?siteCode=bm04000007&ssl=1&token=&qt={} ）
+6.国家税务总局重大税收违法案件信息公布栏（https://www.chinatax.gov.cn/search5/html/searchResult.html?siteCode=bm29000002&searchWord={}&left_right_index=0&searchSource=0 ）
+8.中华人民共和国生态环境部网站（https://www.mee.gov.cn/searchnew/?searchword={} ）
+10.中华人民共和国商务部网站（https://search.mofcom.gov.cn/allSearch/?siteId=0&keyWordType=title&acSuggest={} ）
+13.国家外汇管理局网站（http://www.safe.gov.cn/safe/search/index.html?q={}&siteid=safe&order=releasetime ）
+14.中国人民银行网站（https://wzdig.pbc.gov.cn/search/pcRender?sr=score+desc&pageId=c177a85bd02b4114bebebd210809f691&ext=&pNo=1&q={} ）
+15.国家金融监督管理总局（https://www.nfra.gov.cn/cn/view/pages/index/jiansuo.html?keyWords={}）
+18.中国盐业协会（https://www.cnsalt.cn/index/index/search.html?q={} ）
+19.国家统计局网站（https://www.stats.gov.cn/search/s?qt={}）
+20.中国电力企业联合会网站（https://cec.org.cn/search/index.html?search={} ）
+22.国家能源局网站（https://www.nea.gov.cn/search.htm?kw={} ）
+23.国家市场监督管理总局（https://www.samr.gov.cn/api-gateway/jpaas-jsearch-web-server/search?serviceId=db6d646f22e541d7a303940a8e8623cc&cateid=aef29dab559a4e9db9da54ff2e1eb92b&sortType=2&q={} ）
+25.国家农业农村部网站（https://www.moa.gov.cn/so/s?qt={} ）
+27.中华人民共和国住房和城乡建设部（https://www.mohurd.gov.cn/api-gateway/jpaas-jsearch-web-server/search?serviceId=e2f3058e2a3b4f8abc93eb76e739e3e7&websiteid=&cateid=6ca0f12c0f0642ab8b1dc17028e12ea1&q={} ）
+28.全国建筑市场监管公共服务平台（https://jzsc.mohurd.gov.cn/data/company?complexname={}）
+30.国家药品监督管理局（https://www.nmpa.gov.cn/so/s?tab=all&qt={}）
+33.中华人民共和国人力资源和社会保障部网站（https://www.mohrss.gov.cn/hsearch/?searchword={}）
