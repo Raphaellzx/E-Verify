@@ -5,8 +5,8 @@
 import unittest
 import json
 from pathlib import Path
-from src.everify.core.services.template_manager import TemplateManager
-from src.everify.core.utils.config import VerifyTemplate
+from everify.core.services.template_manager import TemplateManager
+from everify.core.utils.config import VerifyTemplate
 
 
 class TestTemplateManager(unittest.TestCase):

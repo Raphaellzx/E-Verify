@@ -11,7 +11,7 @@ class DocumentEngine:
     """文档处理引擎接口"""
 
     def __init__(self, document_config: Optional[Any] = None):
-        self.config = document_config or config.output
+        self.config = document_config or config
         logger.debug("文档处理引擎初始化")
 
     def create_document(self, title: str, output_path: Optional[Path] = None) -> Path:

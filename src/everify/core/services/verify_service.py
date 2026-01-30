@@ -70,7 +70,7 @@ class VerifyService:
             str: 截图路径
         """
         # 创建输出目录
-        screenshot_dir = self.config.output.screenshots_dir / entity
+        screenshot_dir = self.config.screenshots_dir / entity
         screenshot_dir.mkdir(parents=True, exist_ok=True)
 
         # 生成截图文件名

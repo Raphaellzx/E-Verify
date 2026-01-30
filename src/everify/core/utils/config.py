@@ -31,30 +31,6 @@ class WatermarkConfig(BaseModel):
     position: str = "bottom_right"
 
 
-class OutputConfig(BaseModel):
-    """输出配置"""
-    output_dir: Path = Path("output")
-    screenshots_dir: Path = Path("screenshots")
-    reports_dir: Path = Path("reports")
-    temp_dir: Path = Path("temp")
-
-    def __post_init__(self):
-        # 确保所有路径都是相对于 output_dir 的，但只在第一次初始化时设置
-        # 避免在用户已经设置了路径的情况下再次修改，导致路径重复拼接
-        if self.screenshots_dir == Path("screenshots"):
-            self.screenshots_dir = self.output_dir / "screenshots"
-
-        if self.reports_dir == Path("reports"):
-            self.reports_dir = self.output_dir / "reports"
-
-        if self.temp_dir == Path("temp"):
-            self.temp_dir = self.output_dir / "temp"
-
-        # 确保目录存在
-        self.output_dir.mkdir(exist_ok=True)
-        self.screenshots_dir.mkdir(exist_ok=True)
-        self.reports_dir.mkdir(exist_ok=True)
-        self.temp_dir.mkdir(exist_ok=True)
 
 
 class VerifyTemplate(BaseModel):
@@ -70,9 +46,20 @@ class AppConfig(BaseModel):
     """应用程序配置"""
     browser: BrowserConfig = BrowserConfig()
     watermark: WatermarkConfig = WatermarkConfig()
-    output: OutputConfig = OutputConfig()
+    # 输出路径配置（直接在AppConfig中定义，不再使用OutputConfig子模型）
+    output_dir: Path = Path("output")
+    screenshots_dir: Path = Path("output") / "screenshots"
+    reports_dir: Path = Path("output") / "reports"
+    temp_dir: Path = Path("output") / "temp"
     templates: Dict[str, VerifyTemplate] = {}
     templates_path: Optional[Path] = None
+
+    def __post_init__(self):
+        """初始化后确保所有目录存在"""
+        self.output_dir.mkdir(exist_ok=True)
+        self.screenshots_dir.mkdir(exist_ok=True)
+        self.reports_dir.mkdir(exist_ok=True)
+        self.temp_dir.mkdir(exist_ok=True)
 
     def load_templates(self, template_file: Optional[Path] = None) -> None:
         """加载核查模板

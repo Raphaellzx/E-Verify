@@ -2,7 +2,7 @@
 核心工具模块
 """
 from .logger import setup_logging, get_logger, logger
-from .config import config, AppConfig, BrowserConfig, WatermarkConfig, OutputConfig, VerifyTemplate
+from .config import config, AppConfig, BrowserConfig, WatermarkConfig, VerifyTemplate
 
 __all__ = [
     "setup_logging",
@@ -12,6 +12,5 @@ __all__ = [
     "AppConfig",
     "BrowserConfig",
     "WatermarkConfig",
-    "OutputConfig",
     "VerifyTemplate"
 ]
