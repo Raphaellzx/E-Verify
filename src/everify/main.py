@@ -2,7 +2,7 @@
 """
 Everify 主入口模块
 负责程序启动和流程调度
-实现完全线性的流程：自动核查 → 生成报告 → 等待人工核查截图 → 插入截图
+实现菜单式流程：输入主体 → 选择操作 → 执行任务 → 重新选择
 """
 import argparse
 import asyncio
@@ -31,6 +31,9 @@ class EverifyApplication:
         self.url_generator = URLGenerator()
         self.verify_service = VerifyService(config)
         self.report_generator = ReportGenerator(config)
+        self.entities = []
+        self.templates = {}
+        self.report_paths = {}
 
     def run(self, entities_file: str = None):
         """运行应用程序
@@ -39,30 +42,60 @@ class EverifyApplication:
             entities_file: 主体列表文件路径（可选）
         """
         # 加载模板
-        templates = self.template_manager.load_templates()
-        if not templates:
+        self.templates = self.template_manager.load_templates()
+        if not self.templates:
             logger.error("未加载到任何核查模板，程序退出")
             return
 
-        logger.info(f"成功加载 {len(templates)} 个核查模板")
+        logger.info(f"成功加载 {len(self.templates)} 个核查模板")
 
         # 获取需要核查的主体
         if entities_file:
-            entities = self.entity_manager.load_entities_from_file(entities_file)
+            self.entities = self.entity_manager.load_entities_from_file(entities_file)
         else:
-            entities = self.entity_manager.get_entities_from_input()
+            self.entities = self.entity_manager.get_entities_from_input()
 
-        if not entities:
+        if not self.entities:
             logger.warning("未输入任何需要核查的主体，程序退出")
             return
 
-        entities = self.entity_manager.validate_entities(entities)
-        logger.info(f"共输入 {len(entities)} 个有效的主体需要核查")
+        self.entities = self.entity_manager.validate_entities(self.entities)
+        logger.info(f"共输入 {len(self.entities)} 个有效的主体需要核查")
 
+        # 显示菜单
+        while True:
+            self._show_menu()
+            choice = input("请输入您的选择 (1-3): ").strip()
+
+            if choice == "1":
+                self._perform_auto_verify()
+            elif choice == "2":
+                self._perform_insert_manual_screenshots()
+            elif choice == "3":
+                logger.info("程序已退出")
+                break
+            else:
+                logger.warning("无效的选择，请输入 1、2 或 3")
+
+    def _show_menu(self):
+        """显示菜单"""
+        logger.info("\n------------------------------------------")
+        logger.info("请选择操作：")
+        logger.info("1. 进行自动核查部分")
+        logger.info("   - 自动访问网页")
+        logger.info("   - 截取网页截图")
+        logger.info("   - 生成包含自动化截图的报告")
+        logger.info("2. 插入人工核查图片")
+        logger.info("   - 为已生成的报告插入人工核查的截图")
+        logger.info("3. 退出程序")
+        logger.info("------------------------------------------")
+
+    def _perform_auto_verify(self):
+        """执行自动核查部分"""
         # 生成待核查的 URL 列表
-        entity_urls = self.url_generator.generate_verify_urls(entities, templates)
+        entity_urls = self.url_generator.generate_verify_urls(self.entities, self.templates)
         if not entity_urls:
-            logger.error("未能为任何主体生成有效的核查URL，程序退出")
+            logger.error("未能为任何主体生成有效的核查URL")
             return
 
         logger.info(f"成功为 {len(entity_urls)} 个主体生成核查URL")
@@ -72,42 +105,75 @@ class EverifyApplication:
         results = asyncio.run(self.verify_service.process_all_entities(entity_urls))
 
         # 生成报告
-        report_paths = self.report_generator.generate_report(results, templates=templates)
-        if report_paths:
-            logger.info(f"所有报告已生成！共 {len(report_paths)} 个报告")
-            for entity, path in report_paths.items():
+        self.report_paths = self.report_generator.generate_report(results, templates=self.templates)
+        if self.report_paths:
+            logger.info(f"所有报告已生成！共 {len(self.report_paths)} 个报告")
+            for entity, path in self.report_paths.items():
                 logger.info(f"{entity}: {path}")
-
-            # 等待用户完成人工核查
-            logger.info("\n------------------------------------------")
-            logger.info("报告已生成，请进行人工核查并截图")
-            logger.info("人工核查顺序：网页1主体1 → 网页1主体2 → 网页2主体1 → ...")
-            logger.info("请输入截图保存目录（留空则使用默认目录：当前工作目录下的 screenshots/）：")
-            screenshot_dir_input = input().strip()
-            if screenshot_dir_input:
-                self.config.screenshots_dir = Path(screenshot_dir_input)
-            logger.info(f"截图将保存到: {self.config.screenshots_dir}")
-            logger.info("完成后按 Enter 键继续...")
-            try:
-                input()
-            except EOFError:
-                logger.warning("未检测到用户输入，程序退出")
-                return
-
-            # 插入人工核查的截图
-            logger.info("\n开始插入人工核查的截图...")
-            for entity, report_path in report_paths.items():
-                screenshot_dir = self.config.screenshots_dir / entity
-                if not screenshot_dir.exists():
-                    logger.warning(f"截图文件夹不存在: {screenshot_dir}")
-                    continue
-                self.report_generator.insert_manual_screenshots(entity, report_path, screenshot_dir)
-            logger.info("人工核查截图插入完成！")
-
         else:
             logger.error("未能生成任何报告")
 
-        logger.info("程序执行完毕")
+    def _perform_insert_manual_screenshots(self):
+        """执行插入人工核查图片"""
+        # 检查是否有当前会话的报告路径
+        if not self.report_paths:
+            logger.info("未找到当前会话的报告信息，正在检查报告目录...")
+            self._load_existing_reports()
+
+        if not self.report_paths:
+            logger.warning("未找到已生成的报告，请先执行自动核查部分（选择选项1）")
+            return
+
+        # 等待用户完成人工核查
+        logger.info("\n------------------------------------------")
+        logger.info("请确保已完成人工核查并准备好截图")
+        logger.info("人工核查顺序：网页1主体1 → 网页1主体2 → 网页2主体1 → ...")
+        logger.info("请输入截图保存目录（留空则使用默认目录：当前工作目录下的 screenshots/）：")
+        screenshot_dir_input = input().strip()
+        if screenshot_dir_input:
+            self.config.screenshots_dir = Path(screenshot_dir_input)
+        logger.info(f"截图将从: {self.config.screenshots_dir} 读取")
+        logger.info("确认已完成截图后，按 Enter 键继续...")
+        try:
+            input()
+        except EOFError:
+            logger.warning("未检测到用户输入，返回菜单")
+            return
+
+        # 插入人工核查的截图
+        logger.info("\n开始插入人工核查的截图...")
+        for entity, report_path in self.report_paths.items():
+            # 截图目录是用户指定的根目录，而不是每个主体的子文件夹
+            screenshot_dir = self.config.screenshots_dir
+            self.report_generator.insert_manual_screenshots(entity, report_path, screenshot_dir, self.entities)
+        logger.info("人工核查截图插入完成！")
+
+    def _load_existing_reports(self):
+        """从报告目录加载已存在的报告文件"""
+        report_dir = self.config.reports_dir
+        if not report_dir.exists() or not report_dir.is_dir():
+            logger.debug("报告目录不存在")
+            return
+
+        # 遍历报告目录，查找与主体匹配的报告文件
+        # 报告文件命名格式：{clean_filename(entity)} 诚信核查.docx
+        self.report_paths = {}
+        for entity in self.entities:
+            # 生成预期的报告文件名（使用与 generate_report 相同的命名规则）
+            from everify.utils.file import clean_filename
+            expected_filename = f"{clean_filename(entity)} 诚信核查.docx"
+            report_path = report_dir / expected_filename
+
+            if report_path.exists() and report_path.is_file():
+                logger.info(f"找到已存在的报告: {report_path}")
+                self.report_paths[entity] = report_path
+            else:
+                logger.debug(f"未找到主体 '{entity}' 的报告文件")
+
+        if self.report_paths:
+            logger.info(f"共找到 {len(self.report_paths)} 个已生成的报告")
+        else:
+            logger.debug("未找到与输入主体匹配的报告文件")
 
 
 def main() -> None:

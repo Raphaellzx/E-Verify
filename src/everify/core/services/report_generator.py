@@ -215,13 +215,14 @@ class ReportGenerator:
 
         return str(output_path)
 
-    def insert_manual_screenshots(self, entity: str, report_path: Path, screenshot_dir: Path):
+    def insert_manual_screenshots(self, entity: str, report_path: Path, screenshot_dir: Path, all_entities: List[str]):
         """插入人工核查的截图
 
         Args:
             entity: 主体名称
             report_path: 报告文件路径
-            screenshot_dir: 截图文件夹路径
+            screenshot_dir: 截图文件夹路径（所有截图都在这个目录下）
+            all_entities: 所有需要核查的主体列表（保持原始输入顺序）
         """
         # 获取所有截图文件
         screenshots = list(screenshot_dir.glob("*.png")) + list(screenshot_dir.glob("*.jpg")) + list(screenshot_dir.glob("*.jpeg")) + list(screenshot_dir.glob("*.bmp"))
@@ -229,8 +230,51 @@ class ReportGenerator:
             logger.warning(f"未找到截图文件: {screenshot_dir}")
             return
 
-        # 按文件名排序（确保顺序正确）
-        screenshots.sort(key=lambda x: int(''.join(filter(str.isdigit, x.stem))) if any(c.isdigit() for c in x.stem) else 0)
+        # 按文件名排序（按时间戳顺序，确保顺序正确）
+        screenshots.sort(key=lambda x: x.name)
+
+        # 定义需要人工核查的网页（与 report_generator.py 中的一致）
+        manual_chapters = [
+            "国家企业信用信息公示系统（http://www.gsxt.gov.cn/index.html）",
+            "国家税务总局重大税收违法案件信息公布栏（https://www.chinatax.gov.cn）",
+            "信用中国网（http://www.creditchina.gov.cn）",
+            "中国裁判文书网（http://wenshu.court.gov.cn）",
+            "中华人民共和国国家发展和改革委员会网站（http://www.ndrc.gov.cn）",
+            "中国执行信息公开网（http://zxgk.court.gov.cn/shixin/）",
+            "中华人民共和国应急管理部网站（http://www.mem.gov.cn）",
+            "中华人民共和国工业和信息化部网站（http://www.miit.gov.cn）",
+            "中国商务信用平台（http://www.bcpcn.com）",
+            "全国行业信用公共服务平台（http://www.bcp12312.org.cn）",
+            "中国证券监督管理委员会网站（http://www.csrc.gov.cn）",
+            "证券期货市场失信记录查询平台（http://neris.csrc.gov.cn/shixinchaxun/）",
+            "中华人民共和国自然资源部（http://www.mnr.gov.cn/）",
+            "国家财政部网站（http://www.mof.gov.cn/index.htm）",
+            "中国海关企业进出口信用信息公示平台（http://credit.customs.gov.cn）",
+            "全国资源公共交易平台（http://www.ggzy.gov.cn）",
+            "中华人民共和国海关总署（http://www.customs.gov.cn/）",
+            "中华人民共和国交通运输部网站（https://www.mot.gov.cn/）",
+            "政府采购严重违法失信行为信息记录（http://www.ccgp.gov.cn/cr/list）",
+            "信用能源（https://xyny.nea.gov.cn）",
+            "被执行人信息查询（https://zxgk.court.gov.cn/zhzxgk/）"
+        ]
+
+        # 确定当前主体在列表中的索引
+        try:
+            entity_index = all_entities.index(entity)
+        except ValueError:
+            logger.warning(f"主体 '{entity}' 不在主体列表中")
+            return
+
+        # 计算每个主体每个网页的截图索引
+        # 截图顺序：网页1主体1 → 网页1主体2 → 网页1主体3 → 网页1主体4 → 网页1主体5 → 网页2主体1 → ...
+        entity_screenshots = []
+        for web_index in range(len(manual_chapters)):
+            # 计算该网页该主体的截图索引
+            screenshot_index = web_index * len(all_entities) + entity_index
+            if screenshot_index < len(screenshots):
+                entity_screenshots.append(screenshots[screenshot_index])
+            else:
+                entity_screenshots.append(None)
 
         # 打开报告文件并插入截图
         from docx import Document
@@ -239,41 +283,15 @@ class ReportGenerator:
         try:
             doc = Document(report_path)
 
-            # 定义需要人工核查的网页（与 report_generator.py 中的一致）
-            manual_chapters = [
-                "国家企业信用信息公示系统（http://www.gsxt.gov.cn/index.html）",
-                "国家税务总局重大税收违法案件信息公布栏（https://www.chinatax.gov.cn）",
-                "信用中国网（http://www.creditchina.gov.cn）",
-                "中国裁判文书网（http://wenshu.court.gov.cn）",
-                "中华人民共和国国家发展和改革委员会网站（http://www.ndrc.gov.cn）",
-                "中国执行信息公开网（http://zxgk.court.gov.cn/shixin/）",
-                "中华人民共和国应急管理部网站（http://www.mem.gov.cn）",
-                "中华人民共和国工业和信息化部网站（http://www.miit.gov.cn）",
-                "中国商务信用平台（http://www.bcpcn.com）",
-                "全国行业信用公共服务平台（http://www.bcp12312.org.cn）",
-                "中国证券监督管理委员会网站（http://www.csrc.gov.cn）",
-                "证券期货市场失信记录查询平台（http://neris.csrc.gov.cn/shixinchaxun/）",
-                "中华人民共和国自然资源部（http://www.mnr.gov.cn/）",
-                "国家财政部网站（http://www.mof.gov.cn/index.htm）",
-                "中国海关企业进出口信用信息公示平台（http://credit.customs.gov.cn）",
-                "全国资源公共交易平台（http://www.ggzy.gov.cn）",
-                "中华人民共和国海关总署（http://www.customs.gov.cn/）",
-                "中华人民共和国交通运输部网站（https://www.mot.gov.cn/）",
-                "政府采购严重违法失信行为信息记录（http://www.ccgp.gov.cn/cr/list）",
-                "信用能源（https://xyny.nea.gov.cn）",
-                "被执行人信息查询（https://zxgk.court.gov.cn/zhzxgk/）"
-            ]
-
-            # 遍历每个章节并插入对应的截图（根据网页1主体1 → 网页1主体2 → 网页2主体1的顺序）
-            # 这里假设每个主体的每个网页都有一张截图
+            # 遍历每个章节并插入对应的截图
             for i, chapter_title in enumerate(manual_chapters):
                 # 查找章节标题所在的段落
                 found = False
                 for para in doc.paragraphs:
                     if para.style.name.startswith("Heading 2") and chapter_title in para.text:
-                        # 插入截图
-                        if i < len(screenshots):
-                            para.add_run().add_picture(str(screenshots[i]), width=Inches(6))
+                        # 插入截图（如果有对应的截图）
+                        if i < len(entity_screenshots) and entity_screenshots[i] is not None:
+                            para.add_run().add_picture(str(entity_screenshots[i]), width=Inches(6))
                         found = True
                         break
 
