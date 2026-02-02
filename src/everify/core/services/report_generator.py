@@ -78,7 +78,9 @@ class ReportGenerator:
         from everify.utils.file import clean_filename
 
         # 创建文档
-        title = f"{entity} 诚信核查报告"
+        from datetime import datetime
+        current_date = datetime.now().strftime("%Y%m%d")
+        title = f"{entity}诚信核查报告{current_date}"
         self.document_engine.create_document(title)
 
         # 添加标题
@@ -214,6 +216,90 @@ class ReportGenerator:
         )
 
         return str(output_path)
+
+    def generate_search_engine_report(
+        self,
+        search_results: Dict[str, Dict[str, str]],
+        output_path: Optional[Path] = None
+    ) -> Dict[str, Path]:
+        """生成搜索引擎查询结果的报告
+
+        Args:
+            search_results: 搜索引擎查询结果 {主体名称: {关键词: 截图路径}}
+            output_path: 报告输出路径
+
+        Returns:
+            dict: {主体名称: 报告文件路径}
+        """
+        output_dir = output_path or self.config.reports_dir
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        report_paths = {}
+
+        for entity, entity_results in search_results.items():
+            try:
+                report_path = self._generate_single_search_engine_report(entity, entity_results, output_dir)
+                report_paths[entity] = report_path
+                logger.info(f"主体 '{entity}' 搜索引擎查询报告生成成功: {report_path}")
+            except Exception as e:
+                logger.error(f"主体 '{entity}' 搜索引擎查询报告生成失败: {e}")
+
+        return report_paths
+
+    def _generate_single_search_engine_report(
+        self,
+        entity: str,
+        entity_results: Dict[str, str],
+        output_dir: Path
+    ) -> Path:
+        """为单个主体生成搜索引擎查询结果报告
+
+        Args:
+            entity: 主体名称
+            entity_results: 主体的搜索结果 {关键词: 截图路径}
+            output_dir: 输出目录
+
+        Returns:
+            Path: 报告文件路径
+        """
+        from everify.utils.file import clean_filename
+
+        # 创建文档
+        from datetime import datetime
+        current_date = datetime.now().strftime("%Y%m%d")
+        title = f"{entity}搜索引擎查询报告{current_date}"
+        self.document_engine.create_document(title)
+
+        # 添加标题
+        self.document_engine.add_title(title, level=1)
+
+        # 定义需要搜索的关键词
+        search_keywords = ['舆情', '查封', '冻结', '收购']
+
+        # 添加搜索结果章节
+        for keyword in search_keywords:
+            # 添加章节标题
+            chapter_title = f"公司{keyword}情况"
+            self.document_engine.add_title(chapter_title, level=2)
+
+            # 添加搜索结果截图
+            if keyword in entity_results:
+                screenshot_path = entity_results[keyword]
+                if screenshot_path and Path(screenshot_path).exists():
+                    # 添加水印
+                    watermarked_path = self._add_watermark(screenshot_path, entity)
+                    self.document_engine.add_image(Path(watermarked_path))
+                else:
+                    self.document_engine.add_paragraph("未找到截图")
+            else:
+                self.document_engine.add_paragraph("未找到搜索结果")
+
+        # 保存文档
+        filename = f"{clean_filename(entity)} 搜索引擎查询报告.docx"
+        report_path = output_dir / filename
+        self.document_engine.save_document(report_path)
+
+        return report_path
 
     def insert_manual_screenshots(self, entity: str, report_path: Path, screenshot_dir: Path, all_entities: List[str]):
         """插入人工核查的截图

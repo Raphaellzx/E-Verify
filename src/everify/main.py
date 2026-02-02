@@ -3,9 +3,9 @@
 Everify 主入口模块
 负责程序启动和流程调度
 实现菜单式流程：输入主体 → 选择操作 → 执行任务 → 重新选择
+使用操作模型架构，便于功能扩展和代码管理
 """
 import argparse
-import asyncio
 from pathlib import Path
 from everify.core.utils import logger, setup_logging
 from everify.core.utils.config import AppConfig
@@ -14,6 +14,8 @@ from everify.core.services.template_manager import TemplateManager
 from everify.core.services.url_generator import URLGenerator
 from everify.core.services.verify_service import VerifyService
 from everify.core.services.report_generator import ReportGenerator
+from everify.core.models.operation_factory import OperationFactory
+from everify.core.models.base_operation import OperationResult
 
 
 class EverifyApplication:
@@ -34,6 +36,9 @@ class EverifyApplication:
         self.entities = []
         self.templates = {}
         self.report_paths = {}
+
+        # 初始化操作工厂，用于创建不同类型的操作实例
+        self.operation_factory = OperationFactory()
 
     def run(self, entities_file: str = None):
         """运行应用程序
@@ -65,17 +70,19 @@ class EverifyApplication:
         # 显示菜单
         while True:
             self._show_menu()
-            choice = input("请输入您的选择 (1-3): ").strip()
+            choice = input("请输入您的选择 (1-4): ").strip()
 
             if choice == "1":
                 self._perform_auto_verify()
             elif choice == "2":
                 self._perform_insert_manual_screenshots()
             elif choice == "3":
+                self._perform_search_engine_query()
+            elif choice == "4":
                 logger.info("程序已退出")
                 break
             else:
-                logger.warning("无效的选择，请输入 1、2 或 3")
+                logger.warning("无效的选择，请输入 1、2、3 或 4")
 
     def _show_menu(self):
         """显示菜单"""
@@ -87,31 +94,29 @@ class EverifyApplication:
         logger.info("   - 生成包含自动化截图的报告")
         logger.info("2. 插入人工核查图片")
         logger.info("   - 为已生成的报告插入人工核查的截图")
-        logger.info("3. 退出程序")
+        logger.info("3. 搜索引擎查询")
+        logger.info("   - 分别搜索主体+舆情、查封、冻结、收购")
+        logger.info("   - 为每个主体生成搜索结果截图")
+        logger.info("4. 退出程序")
         logger.info("------------------------------------------")
 
     def _perform_auto_verify(self):
         """执行自动核查部分"""
-        # 生成待核查的 URL 列表
-        entity_urls = self.url_generator.generate_verify_urls(self.entities, self.templates)
-        if not entity_urls:
-            logger.error("未能为任何主体生成有效的核查URL")
-            return
+        logger.info("开始执行自动核查操作...")
+        auto_verify_operation = self.operation_factory.create_auto_verify_operation(
+            self.url_generator, self.verify_service, self.report_generator
+        )
+        result: OperationResult = auto_verify_operation.execute(
+            self.entities, self.templates
+        )
 
-        logger.info(f"成功为 {len(entity_urls)} 个主体生成核查URL")
-
-        # 异步执行核查
-        logger.info("开始执行网页核查...")
-        results = asyncio.run(self.verify_service.process_all_entities(entity_urls))
-
-        # 生成报告
-        self.report_paths = self.report_generator.generate_report(results, templates=self.templates)
-        if self.report_paths:
-            logger.info(f"所有报告已生成！共 {len(self.report_paths)} 个报告")
+        if result.success:
+            logger.info(result.data['message'])
+            self.report_paths = result.data['report_paths']
             for entity, path in self.report_paths.items():
                 logger.info(f"{entity}: {path}")
         else:
-            logger.error("未能生成任何报告")
+            logger.error(result.error)
 
     def _perform_insert_manual_screenshots(self):
         """执行插入人工核查图片"""
@@ -140,13 +145,38 @@ class EverifyApplication:
             logger.warning("未检测到用户输入，返回菜单")
             return
 
-        # 插入人工核查的截图
-        logger.info("\n开始插入人工核查的截图...")
-        for entity, report_path in self.report_paths.items():
-            # 截图目录是用户指定的根目录，而不是每个主体的子文件夹
-            screenshot_dir = self.config.screenshots_dir
-            self.report_generator.insert_manual_screenshots(entity, report_path, screenshot_dir, self.entities)
-        logger.info("人工核查截图插入完成！")
+        logger.info("开始插入人工核查截图...")
+        manual_screenshot_operation = self.operation_factory.create_manual_screenshot_operation(
+            self.report_generator, self.config
+        )
+        result: OperationResult = manual_screenshot_operation.execute(
+            self.entities, self.report_paths, self.config.screenshots_dir
+        )
+
+        if result.success:
+            logger.info(result.data['message'])
+        else:
+            logger.error(result.error)
+
+    def _perform_search_engine_query(self):
+        """执行搜索引擎查询操作"""
+        logger.info("开始执行搜索引擎查询操作...")
+        search_engine_query_operation = self.operation_factory.create_search_engine_query_operation(
+            self.config
+        )
+        result: OperationResult = search_engine_query_operation.execute(
+            self.entities
+        )
+
+        if result.success:
+            logger.info(result.data['message'])
+            # 可以在这里添加搜索结果的处理逻辑，如显示或保存
+            # for entity, entity_results in result.data['results'].items():
+            #     logger.info(f"主体 '{entity}' 的搜索结果：")
+            #     for keyword, screenshot_path in entity_results.items():
+            #         logger.info(f"  {keyword}: {screenshot_path}")
+        else:
+            logger.error(result.error)
 
     def _load_existing_reports(self):
         """从报告目录加载已存在的报告文件"""
