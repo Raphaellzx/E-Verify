@@ -69,17 +69,16 @@ class VerifyService:
         Returns:
             str: 截图路径
         """
-        # 创建输出目录
-        from datetime import datetime
-        current_date = datetime.now().strftime("%Y%m%d")
-        screenshot_dir = self.config.screenshots_dir / f"{entity}{current_date}"
+        # 创建输出目录 - 直接使用配置的截图文件夹，不创建子文件夹
+        screenshot_dir = self.config.screenshots_dir
         screenshot_dir.mkdir(parents=True, exist_ok=True)
 
         # 生成截图文件名
         from everify.common.file import clean_filename
         import hashlib
+        from datetime import datetime
         url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
-        filename = f"{clean_filename(entity)}_{url_hash}.png"
+        filename = f"{clean_filename(entity)}_{url_hash}_{datetime.now().strftime('%H%M%S')}.png"
         screenshot_path = screenshot_dir / filename
 
         try:

@@ -53,15 +53,21 @@ class AutoVerifyOperation(BaseOperation):
             # 生成报告
             report_paths = self.report_generator.generate_report(results, templates=templates)
             logger.info(f"报告生成结果: {report_paths}")
-            if report_paths and len(report_paths) > 0:
-                # 将 WindowsPath 对象转换为字符串，以便可以序列化到会话中
+
+            # 检查报告生成结果
+            if report_paths:
                 str_report_paths = {entity: str(path) for entity, path in report_paths.items()}
+                logger.info(f"成功生成 {len(str_report_paths)} 个报告")
                 return OperationResult.success_result({
                     'report_paths': str_report_paths,
-                    'message': f"所有报告已生成！共 {len(report_paths)} 个报告"
+                    'message': f"所有报告已生成！共 {len(str_report_paths)} 个报告"
                 })
             else:
-                logger.error("报告生成失败，没有生成任何有效的报告文件")
-                return OperationResult.error_result("未能生成任何有效报告")
+                logger.warning("报告生成器返回空结果，可能没有符合条件的数据")
+                return OperationResult.success_result({
+                    'report_paths': {},
+                    'message': "没有符合条件的数据用于生成报告"
+                })
         except Exception as e:
+            logger.error(f"自动核查操作执行失败: {str(e)}")
             return OperationResult.error_result(f"自动核查操作执行失败: {str(e)}")

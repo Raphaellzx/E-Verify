@@ -707,18 +707,27 @@ function openAllManualUrls() {
                 return;
             }
 
-            // 逐个打开URL（添加延迟，避免浏览器拦截）
+            // 优化打开策略，增加更长的延迟
             data.urls.forEach((item, index) => {
                 setTimeout(() => {
-                    window.open(item.url, '_blank');
-                }, index * 500);
+                    try {
+                        const newWindow = window.open(item.url, '_blank');
+                        if (!newWindow) {
+                            console.error(`无法打开URL: ${item.url} - 可能被浏览器阻止`);
+                            alert(`无法打开页面: ${item.url}\n\n请检查浏览器的弹出窗口阻止设置`);
+                        }
+                    } catch (error) {
+                        console.error(`打开URL时出错: ${item.url}`, error);
+                    }
+                }, index * 1000); // 增加延迟到1秒
             });
         } else {
             alert('获取URL列表失败: ' + data.message);
         }
     })
     .catch(error => {
-        alert('获取URL列表失败: ' + error.message);
+        console.error('获取人工核查URL失败:', error);
+        alert('获取人工核查URL失败: ' + error.message);
     });
 }
 
