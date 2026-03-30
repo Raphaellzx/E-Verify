@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Everify - 网页核查自动化系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧导航 -->
+        <nav class="sidebar">
+            <div class="logo">
+                <i class="fas fa-search"></i>
+                <h1>Everify</h1>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item {{ 'active' if active_tab == 'integrity_check' else '' }}">
+                    <a href="{{ url_for('integrity_check') }}">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>诚信核查</span>
+                    </a>
+                </li>
+                <li class="nav-item {{ 'active' if active_tab == 'bribery_check' else '' }}">
+                    <a href="{{ url_for('bribery_check') }}">
+                        <i class="fas fa-gavel"></i>
+                        <span>涉贿核查</span>
+                    </a>
+                </li>
+                <li class="nav-item {{ 'active' if active_tab == 'admin_templates' else '' }}">
+                    <a href="{{ url_for('admin_templates') }}">
+                        <i class="fas fa-sitemap"></i>
+                        <span>模板管理</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- 右侧内容区 -->
+        <main class="content">
+            <!-- 顶部导航栏 -->
+            <header class="topbar">
+                <h2 class="page-title">{% block page_title %}{% endblock %}</h2>
+            </header>
+
+            <!-- 主体内容 -->
+            <div class="main-content">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,782 @@
+{% extends "base.html" %}
+
+{% block page_title %}诚信核查 - Everify 网页核查自动化系统{% endblock %}
+
+{% block content %}
+<div class="check-container">
+    <!-- 进度指示器 -->
+    <div class="progress-indicator">
+        <div class="progress-step {{ 'active' if current_step == 1 else 'completed' if current_step > 1 else '' }}" onclick="goToStep(1)" style="cursor: pointer;">
+            <div class="step-number">1</div>
+            <div class="step-label">主体输入</div>
+        </div>
+        <div class="progress-line {{ 'completed' if current_step > 1 else '' }}"></div>
+        <div class="progress-step {{ 'active' if current_step == 2 else 'completed' if current_step > 2 else '' }}" onclick="goToStep(2)" style="cursor: pointer;">
+            <div class="step-number">2</div>
+            <div class="step-label">网页选择</div>
+        </div>
+        <div class="progress-line {{ 'completed' if current_step > 2 else '' }}"></div>
+        <div class="progress-step {{ 'active' if current_step == 3 else 'completed' if current_step > 3 else '' }}" onclick="goToStep(3)" style="cursor: pointer;">
+            <div class="step-number">3</div>
+            <div class="step-label">执行核查</div>
+        </div>
+        <div class="progress-line {{ 'completed' if current_step > 3 else '' }}"></div>
+        <div class="progress-step {{ 'active' if current_step == 4 else 'completed' if current_step > 4 else '' }}" onclick="goToStep(4)" style="cursor: pointer;">
+            <div class="step-number">4</div>
+            <div class="step-label">结果保存</div>
+        </div>
+        <div class="progress-line {{ 'completed' if current_step > 4 else '' }}"></div>
+        <div class="progress-step {{ 'active' if current_step == 5 else 'completed' if current_step > 5 else '' }}" onclick="goToStep(5)" style="cursor: pointer;">
+            <div class="step-number">5</div>
+            <div class="step-label">人工核查</div>
+        </div>
+    </div>
+
+    <!-- 步骤内容 -->
+    <div class="step-content">
+        <!-- 步骤1：主体输入 -->
+        <div id="step-1" class="step-container {{ 'active' if current_step == 1 else '' }}">
+            <div class="card">
+                <h3>主体输入</h3>
+                <p class="help-text">请输入需要核查的主体名称，每个主体一行</p>
+                <form id="entities-form">
+                    <textarea id="entities-input" name="entities"></textarea>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="clearEntities()">
+                            <i class="fas fa-times"></i>
+                            清空
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check"></i>
+                            验证并保存
+                        </button>
+                    </div>
+                </form>
+                <div id="entities-status"></div>
+            </div>
+        </div>
+
+        <!-- 步骤2：网页选择 -->
+        <div id="step-2" class="step-container {{ 'active' if current_step == 2 else '' }}">
+            <div class="card">
+                <h3>网页选择</h3>
+                <p class="help-text">请选择需要核查的网页源</p>
+
+                <!-- 自动化核查网页 -->
+                <div class="template-section">
+                    <div class="template-header-with-select">
+                        <h4>自动化核查网页</h4>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="select-all-automated">
+                            <span>全选</span>
+                        </label>
+                    </div>
+                    <div class="template-list">
+                        {% for template in templates.values() %}
+                        {% if template.category != 'manual' %}
+                        <label class="template-item">
+                            <input type="checkbox" class="template-checkbox automated-checkbox"
+                                   data-id="{{ loop.index0 }}"
+                                   value="{{ template.name }}"
+                                   {% if template in selected_templates %}checked{% endif %}>
+                            <div class="template-info">
+                                <div class="template-name">{{ template.description }}</div>
+                                <div class="template-url">{{ template.url_pattern }}</div>
+                            </div>
+                        </label>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 人工核查网页 -->
+                <div class="template-section">
+                    <div class="template-header-with-select">
+                        <h4>人工核查网页</h4>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="select-all-manual">
+                            <span>全选</span>
+                        </label>
+                    </div>
+                    <div class="template-list">
+                        {% for template in templates.values() %}
+                        {% if template.category == 'manual' %}
+                        <label class="template-item">
+                            <input type="checkbox" class="template-checkbox manual-checkbox"
+                                   data-id="{{ loop.index0 }}"
+                                   value="{{ template.name }}"
+                                   {% if template in selected_templates %}checked{% endif %}>
+                            <div class="template-info">
+                                <div class="template-name">{{ template.description }}</div>
+                                <div class="template-url">{{ template.url_pattern }}</div>
+                            </div>
+                        </label>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" onclick="saveSelection()">
+                        <i class="fas fa-check"></i>
+                        保存选择 ({{ selected_templates|length }} 个)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步骤3：执行核查 -->
+        <div id="step-3" class="step-container {{ 'active' if current_step == 3 else '' }}">
+            <div class="card">
+                <h3>执行核查</h3>
+
+                <!-- 主体信息 -->
+                <div class="info-section">
+                    <h4>核查主体 <span class="badge">{{ entities|length }}</span></h4>
+                    <div class="entities-list">
+                        {% for entity in entities %}
+                        <div class="entity-tag">{{ entity }}</div>
+                        {% else %}
+                        <p class="empty-message">请先输入需要核查的主体</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 选中模板 -->
+                <div class="info-section">
+                    <h4>选择网页源 <span class="badge">{{ selected_templates|length }}</span></h4>
+                    <div class="templates-list">
+                        {% for template in selected_templates %}
+                        <div class="template-tag">{{ template.description }}</div>
+                        {% else %}
+                        <p class="empty-message">请先选择需要核查的网页源</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 执行按钮 -->
+                {% if entities and selected_templates %}
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary btn-large" onclick="startVerification()">
+                        <i class="fas fa-play"></i>
+                        开始核查
+                    </button>
+                </div>
+                {% else %}
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary btn-large" disabled>
+                        <i class="fas fa-play"></i>
+                        开始核查
+                    </button>
+                </div>
+                <div class="warning-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    请先完成主体输入和网页选择
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 步骤4：结果保存 -->
+        <div id="step-4" class="step-container {{ 'active' if current_step == 4 else '' }}">
+            <div class="card">
+                <h3>结果保存</h3>
+                <p class="help-text">核查结果和生成的报告</p>
+
+                <div class="results-section">
+                    {% if report_paths %}
+                    {% for entity, report_path in report_paths.items() %}
+                    <div class="result-item">
+                        <i class="fas fa-file-word"></i>
+                        <div class="result-info">
+                            <div class="result-name">{{ entity }} 诚信核查报告</div>
+                            <div class="result-time">{{ current_time }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="no-results">
+                        <i class="fas fa-inbox"></i>
+                        <p>暂无报告</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 图片保存位置提示 -->
+                <div class="info-message">
+                    <i class="fas fa-info-circle"></i>
+                    <p>图片已保存到您的图片文件夹中（按主体名称和日期分类）</p>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="openFolder()">
+                        <i class="fas fa-folder-open"></i>
+                        打开报告文件夹
+                    </button>
+                    <button type="button" class="btn btn-primary">
+                        <i class="fas fa-redo"></i>
+                        重新核查
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步骤5：人工核查 -->
+        <div id="step-5" class="step-container {{ 'active' if current_step == 5 else '' }}">
+            <div class="card">
+                <h3>人工核查</h3>
+                <p class="help-text">请确保已完成人工核查并准备好截图</p>
+
+                <div class="info-message">
+                    <i class="fas fa-info-circle"></i>
+                    <p>人工核查顺序：网页1主体1 → 网页1主体2 → 网页2主体1 → ...</p>
+                </div>
+
+                <!-- 人工核查URL列表 -->
+                <div class="urls-section">
+                    <h4>需要核查的URL列表 <span id="manual-urls-count" class="badge">0</span></h4>
+                    <div id="manual-urls-list" class="urls-list">
+                        <div class="no-urls">
+                            <i class="fas fa-link"></i>
+                            <p>暂无需要人工核查的URL</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions mb-3">
+                    <button type="button" class="btn btn-primary" onclick="openAllManualUrls()">
+                        <i class="fas fa-external-link-alt"></i>
+                        打开所有人工核查网页
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="refreshManualUrls()">
+                        <i class="fas fa-sync-alt"></i>
+                        刷新URL列表
+                    </button>
+                </div>
+
+                <div class="results-section">
+                    <div class="result-item">
+                        <i class="fas fa-lightbulb"></i>
+                        <div class="result-info">
+                            <div class="result-name">核查说明</div>
+                            <div class="result-time">
+                                1. 点击"打开所有人工核查网页"按钮自动打开所有需要核查的网页<br>
+                                2. 对每个主体的每个网页进行截图<br>
+                                3. 将截图保存到 <strong>Everify Screenshots</strong> 文件夹<br>
+                                4. 点击"开始人工核查"按钮完成图片插入
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if report_paths %}
+                <div class="info-message">
+                    <i class="fas fa-check-circle"></i>
+                    <p>报告路径已就绪，等待人工核查</p>
+                </div>
+                {% else %}
+                <div class="warning-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>请先完成自动核查，生成报告后再进行人工核查</p>
+                </div>
+                {% endif %}
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="openScreenshotsFolder()">
+                        <i class="fas fa-folder-open"></i>
+                        打开图片文件夹
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="startManualVerification()">
+                        <i class="fas fa-check"></i>
+                        开始人工核查
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导航按钮 -->
+    <div class="navigation-buttons">
+        <button class="btn btn-secondary" onclick="goToPreviousStep()">
+            <i class="fas fa-arrow-left"></i>
+            上一个
+        </button>
+
+        <button class="btn btn-primary" onclick="goToNextStep()">
+            <i class="fas fa-arrow-right"></i>
+            下一个
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 当前步骤变量
+let currentStep = {{ current_step }};
+
+// 进度步骤导航
+function goToStep(step) {
+    if (step < 1 || step > 5) return;
+
+    // 对于步骤3（执行核查），需要刷新页面以确保会话数据与页面内容同步
+    if (step === 3) {
+        window.location.href = `/integrity-check?step=${step}`;
+        return;
+    }
+
+    currentStep = step;
+
+    // 1. 隐藏所有步骤
+    document.querySelectorAll('.step-container').forEach(el => {
+        el.classList.remove('active');
+    });
+    // 2. 显示当前步骤
+    document.getElementById(`step-${step}`).classList.add('active');
+    // 3. 更新 URL hash（不刷新）
+    window.location.hash = `step-${step}`;
+    // 4. 更新进度指示器
+    updateProgressIndicator(step);
+
+    // 5. 如果进入人工核查步骤，自动加载URL列表
+    if (step === 5) {
+        refreshManualUrls();
+    }
+}
+
+function goToNextStep() {
+    if (currentStep < 5) {
+        goToStep(currentStep + 1);
+    }
+}
+
+function goToPreviousStep() {
+    if (currentStep > 1) {
+        goToStep(currentStep - 1);
+    }
+}
+
+function updateProgressIndicator(currentStep) {
+    const steps = document.querySelectorAll('.progress-step');
+    const lines = document.querySelectorAll('.progress-line');
+
+    steps.forEach((step, index) => {
+        const stepNumber = index + 1;
+        step.classList.remove('active', 'completed');
+
+        if (stepNumber === currentStep) {
+            step.classList.add('active');
+        } else if (stepNumber < currentStep) {
+            step.classList.add('completed');
+        }
+    });
+
+    lines.forEach((line, index) => {
+        const lineNumber = index + 1;
+        line.classList.remove('completed');
+
+        if (lineNumber < currentStep) {
+            line.classList.add('completed');
+        }
+    });
+}
+
+function completeCheck() {
+    if (confirm('核查已完成！是否要开始新的核查？')) {
+        goToStep(1);
+    }
+}
+
+// 页面加载完成后初始化事件监听器
+document.addEventListener('DOMContentLoaded', function() {
+    // 主体输入功能
+    const entitiesForm = document.getElementById('entities-form');
+    if (entitiesForm) {
+        entitiesForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveEntities();
+        });
+    }
+
+    // 模板选择功能
+    const templateCheckboxes = document.querySelectorAll('.template-checkbox');
+    templateCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSaveButton);
+    });
+
+    const categoryCheckboxes = document.querySelectorAll('.category-checkbox');
+    categoryCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const category = this.dataset.category;
+            const templateCheckboxes = document.querySelectorAll(`.template-category[data-category="${category}"] .template-checkbox`);
+            templateCheckboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+            updateSaveButton();
+        });
+    });
+
+    // 初始化保存按钮显示
+    updateSaveButton();
+
+    // 监听hash变化
+    window.addEventListener('hashchange', function() {
+        const hash = window.location.hash;
+        if (hash.startsWith('#step-')) {
+            const step = parseInt(hash.replace('#step-', ''));
+            if (step >= 1 && step <= 5) {
+                goToStep(step);
+            }
+        }
+    });
+});
+
+// 主体输入功能
+function saveEntities() {
+    const entities = document.getElementById('entities-input').value;
+    const statusDiv = document.getElementById('entities-status');
+
+    fetch('/entities', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'entities=' + encodeURIComponent(entities)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            statusDiv.innerHTML = `
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i>
+                    成功保存 ${data.count} 个有效主体
+                </div>
+            `;
+        } else {
+            statusDiv.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    ${data.message}
+                </div>
+            `;
+        }
+    });
+}
+
+function clearEntities() {
+    document.getElementById('entities-input').value = '';
+    document.getElementById('entities-status').innerHTML = '';
+    document.getElementById('next-button').disabled = true;
+}
+
+// 模板选择功能
+function updateSaveButton() {
+    const selectedCount = document.querySelectorAll('.template-checkbox:checked').length;
+    const saveBtn = document.querySelector('[onclick="saveSelection()"]');
+    if (saveBtn) {
+        saveBtn.innerHTML = `
+            <i class="fas fa-check"></i>
+            保存选择 (${selectedCount} 个)
+        `;
+    }
+}
+
+function saveSelection() {
+    const selectedTemplates = Array.from(
+        document.querySelectorAll('.template-checkbox:checked')
+    ).map(cb => cb.value);
+
+    fetch('/templates/select', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({selected: selectedTemplates})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // 创建状态显示元素
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'success-message';
+            statusDiv.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                成功选择 ${data.count} 个模板
+            `;
+            statusDiv.style.marginTop = '1rem';
+
+            // 在卡片底部显示成功信息
+            const card = document.querySelector('.step-container.active .card');
+            if (card) {
+                card.appendChild(statusDiv);
+                setTimeout(() => statusDiv.remove(), 3000);
+            }
+        }
+    });
+}
+
+// 自动化核查网页全选功能
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllAutomated = document.getElementById('select-all-automated');
+    if (selectAllAutomated) {
+        selectAllAutomated.addEventListener('change', function() {
+            const automatedCheckboxes = document.querySelectorAll('.automated-checkbox');
+            automatedCheckboxes.forEach(cb => {
+                cb.checked = selectAllAutomated.checked;
+            });
+            updateSaveButton();
+        });
+    }
+});
+
+// 人工核查网页全选功能
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllManual = document.getElementById('select-all-manual');
+    if (selectAllManual) {
+        selectAllManual.addEventListener('change', function() {
+            const manualCheckboxes = document.querySelectorAll('.manual-checkbox');
+            manualCheckboxes.forEach(cb => {
+                cb.checked = selectAllManual.checked;
+            });
+            updateSaveButton();
+        });
+    }
+});
+
+// 执行核查功能
+function startVerification() {
+    if (confirm('确定要开始核查吗？这将自动访问网页并截图。')) {
+        // 显示加载提示
+        const button = document.querySelector('.btn-large');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 核查中...';
+        button.disabled = true;
+
+        // 调用 API 开始核查
+        fetch('/api/verify/start', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({})
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP 错误：${response.status} ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                alert(data.message);
+                document.getElementById('next-button').disabled = false;
+            } else {
+                alert('执行核查失败：' + data.message);
+                if (data.stack) {
+                    console.error('详细错误信息：', data.stack);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('请求失败：', error);
+            let errorMessage = '执行核查失败';
+            if (error.message === 'Failed to fetch') {
+                errorMessage = '网络请求失败，请检查服务器是否正常运行';
+            } else if (error.message.includes('HTTP')) {
+                errorMessage = '服务器响应错误：' + error.message;
+            } else {
+                errorMessage = '执行核查失败：' + error.message;
+            }
+            alert(errorMessage);
+        })
+        .finally(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+}
+
+function openFolder() {
+    // 打开报告文件夹
+    fetch('/api/folder/open', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log('文件夹已打开');
+        } else {
+            alert('打开文件夹失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('打开文件夹失败: ' + error.message);
+    });
+}
+
+function openScreenshotsFolder() {
+    // 打开人工核查截图文件夹
+    fetch('/api/folder/open-screenshots', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log('截图文件夹已打开');
+        } else {
+            alert('打开截图文件夹失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('打开截图文件夹失败: ' + error.message);
+    });
+}
+
+function refreshManualUrls() {
+    // 刷新人工核查URL列表
+    fetch('/api/manual-verify/urls', {
+        method: 'GET',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            displayManualUrls(data.urls);
+        } else {
+            displayManualUrls([]);
+            console.log('获取URL列表失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        displayManualUrls([]);
+        console.log('获取URL列表失败: ' + error.message);
+    });
+}
+
+function displayManualUrls(urls) {
+    const urlsList = document.getElementById('manual-urls-list');
+    const urlsCount = document.getElementById('manual-urls-count');
+
+    if (!urls || urls.length === 0) {
+        urlsList.innerHTML = `
+            <div class="no-urls">
+                <i class="fas fa-link"></i>
+                <p>暂无需要人工核查的URL</p>
+            </div>
+        `;
+        urlsCount.textContent = '0';
+        return;
+    }
+
+    urlsCount.textContent = urls.length.toString();
+
+    let html = '';
+    urls.forEach((item, index) => {
+        html += `
+            <div class="url-item">
+                <div class="url-number">${index + 1}</div>
+                <div class="url-content">
+                    <div class="url-entity"><i class="fas fa-user"></i> ${item.entity}</div>
+                    <div class="url-template"><i class="fas fa-globe"></i> ${item.description}</div>
+                    <div class="url-link">
+                        <a href="${item.url}" target="_blank" rel="noopener noreferrer">
+                            ${item.url}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    urlsList.innerHTML = html;
+}
+
+function openAllManualUrls() {
+    // 获取所有需要人工核查的URL并逐个打开
+    fetch('/api/manual-verify/urls', {
+        method: 'GET',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            if (!data.urls || data.urls.length === 0) {
+                alert('没有需要人工核查的URL');
+                return;
+            }
+
+            if (!confirm(`确定要打开 ${data.urls.length} 个网页吗？这可能会打开多个标签页。`)) {
+                return;
+            }
+
+            // 逐个打开URL（添加延迟，避免浏览器拦截）
+            data.urls.forEach((item, index) => {
+                setTimeout(() => {
+                    window.open(item.url, '_blank');
+                }, index * 500);
+            });
+        } else {
+            alert('获取URL列表失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('获取URL列表失败: ' + error.message);
+    });
+}
+
+function startManualVerification() {
+    // 开始人工核查 - 将截图插入报告
+    if (!confirm('确定要开始人工核查吗？这将从截图文件夹中读取图片并插入到报告中。')) {
+        return;
+    }
+
+    // 显示加载提示
+    const button = document.querySelector('[onclick="startManualVerification()"]');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 处理中...';
+    button.disabled = true;
+
+    // 调用 API 开始人工核查
+    fetch('/api/manual-verify/start', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({})
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP 错误：${response.status} ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message);
+            console.log('人工核查完成');
+        } else {
+            alert('执行人工核查失败：' + data.message);
+            if (data.stack) {
+                console.error('详细错误信息：', data.stack);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('请求失败：', error);
+        let errorMessage = '执行人工核查失败';
+        if (error.message === 'Failed to fetch') {
+            errorMessage = '网络请求失败，请检查服务器是否正常运行';
+        } else if (error.message.includes('HTTP')) {
+            errorMessage = '服务器响应错误：' + error.message;
+        } else {
+            errorMessage = '执行人工核查失败：' + error.message;
+        }
+        alert(errorMessage);
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function previewVerification() {
+    alert('预览功能正在开发中...');
+}
+</script>
+{% endblock %}

@@ -3,10 +3,11 @@
 负责执行自动核查任务
 """
 from typing import List, Dict
-from everify.core.models.base_operation import BaseOperation, OperationResult
+from everify.core.operations.base_operation import BaseOperation, OperationResult
 from everify.core.services.url_generator import URLGenerator
 from everify.core.services.verify_service import VerifyService
 from everify.core.services.report_generator import ReportGenerator
+from everify.core.utils import logger
 import asyncio
 
 
@@ -51,12 +52,16 @@ class AutoVerifyOperation(BaseOperation):
 
             # 生成报告
             report_paths = self.report_generator.generate_report(results, templates=templates)
-            if report_paths:
+            logger.info(f"报告生成结果: {report_paths}")
+            if report_paths and len(report_paths) > 0:
+                # 将 WindowsPath 对象转换为字符串，以便可以序列化到会话中
+                str_report_paths = {entity: str(path) for entity, path in report_paths.items()}
                 return OperationResult.success_result({
-                    'report_paths': report_paths,
+                    'report_paths': str_report_paths,
                     'message': f"所有报告已生成！共 {len(report_paths)} 个报告"
                 })
             else:
-                return OperationResult.error_result("未能生成任何报告")
+                logger.error("报告生成失败，没有生成任何有效的报告文件")
+                return OperationResult.error_result("未能生成任何有效报告")
         except Exception as e:
             return OperationResult.error_result(f"自动核查操作执行失败: {str(e)}")

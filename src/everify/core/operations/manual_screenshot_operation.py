@@ -2,7 +2,7 @@
 人工截图插入操作模型
 负责插入人工核查的截图
 """
-from everify.core.models.base_operation import BaseOperation, OperationResult
+from everify.core.operations.base_operation import BaseOperation, OperationResult
 from everify.core.services.report_generator import ReportGenerator
 from everify.core.utils.config import AppConfig
 from pathlib import Path

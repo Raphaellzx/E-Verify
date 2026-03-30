@@ -14,8 +14,8 @@ from everify.core.services.template_manager import TemplateManager
 from everify.core.services.url_generator import URLGenerator
 from everify.core.services.verify_service import VerifyService
 from everify.core.services.report_generator import ReportGenerator
-from everify.core.models.operation_factory import OperationFactory
-from everify.core.models.base_operation import OperationResult
+from everify.core.operations.operation_factory import OperationFactory
+from everify.core.operations.base_operation import OperationResult
 
 
 class EverifyApplication:
@@ -70,44 +70,77 @@ class EverifyApplication:
         # 显示菜单
         while True:
             self._show_menu()
-            choice = input("请输入您的选择 (1-4): ").strip()
+            choice = input("请输入您的选择 (1-6): ").strip()
 
             if choice == "1":
-                self._perform_auto_verify()
+                self._perform_select_templates()
             elif choice == "2":
-                self._perform_insert_manual_screenshots()
+                self._perform_auto_verify()
             elif choice == "3":
-                self._perform_search_engine_query()
+                self._perform_insert_manual_screenshots()
             elif choice == "4":
+                self._perform_search_engine_query()
+            elif choice == "5":
+                self._perform_manage_templates()
+            elif choice == "6":
                 logger.info("程序已退出")
                 break
             else:
-                logger.warning("无效的选择，请输入 1、2、3 或 4")
+                logger.warning("无效的选择，请输入 1、2、3、4、5 或 6")
 
     def _show_menu(self):
         """显示菜单"""
         logger.info("\n------------------------------------------")
         logger.info("请选择操作：")
-        logger.info("1. 进行自动核查部分")
+        logger.info("1. 选择核查模板")
+        logger.info("   - 查看和选择需要使用的网页模板")
+        logger.info("   - 支持按分类选择或选择特定模板")
+        if self.template_manager.get_selected_templates():
+            logger.info(f"   当前已选择 {len(self.template_manager.get_selected_templates())} 个模板")
+
+        logger.info("2. 进行自动核查部分")
         logger.info("   - 自动访问网页")
         logger.info("   - 截取网页截图")
         logger.info("   - 生成包含自动化截图的报告")
-        logger.info("2. 插入人工核查图片")
+
+        logger.info("3. 插入人工核查图片")
         logger.info("   - 为已生成的报告插入人工核查的截图")
-        logger.info("3. 搜索引擎查询")
+
+        logger.info("4. 搜索引擎查询")
         logger.info("   - 分别搜索主体+舆情、查封、冻结、收购")
         logger.info("   - 为每个主体生成搜索结果截图")
-        logger.info("4. 退出程序")
+
+        logger.info("5. 管理自定义模板")
+        logger.info("   - 创建、查看、删除用户自定义的网页模板")
+        logger.info("   - 管理用户模板分类和配置")
+
+        logger.info("6. 退出程序")
         logger.info("------------------------------------------")
+
+    def _perform_select_templates(self):
+        """执行模板选择操作"""
+        logger.info("开始选择核查模板...")
+
+        selected = self.template_manager.select_templates_interactively()
+
+        if selected:
+            logger.info(f"模板选择完成，将使用 {len(selected)} 个模板进行核查")
+        else:
+            logger.info("未选择任何模板")
 
     def _perform_auto_verify(self):
         """执行自动核查部分"""
+        # 检查是否选择了模板
+        if not self.template_manager.get_selected_templates():
+            logger.info("未选择核查模板，请先选择模板（选择选项1）")
+            return
+
         logger.info("开始执行自动核查操作...")
         auto_verify_operation = self.operation_factory.create_auto_verify_operation(
             self.url_generator, self.verify_service, self.report_generator
         )
         result: OperationResult = auto_verify_operation.execute(
-            self.entities, self.templates
+            self.entities, self.template_manager.get_selected_templates()
         )
 
         if result.success:
@@ -120,13 +153,18 @@ class EverifyApplication:
 
     def _perform_insert_manual_screenshots(self):
         """执行插入人工核查图片"""
+        # 检查是否选择了模板
+        if not self.template_manager.get_selected_templates():
+            logger.info("未选择核查模板，请先选择模板（选择选项1）")
+            return
+
         # 检查是否有当前会话的报告路径
         if not self.report_paths:
             logger.info("未找到当前会话的报告信息，正在检查报告目录...")
             self._load_existing_reports()
 
         if not self.report_paths:
-            logger.warning("未找到已生成的报告，请先执行自动核查部分（选择选项1）")
+            logger.warning("未找到已生成的报告，请先执行自动核查部分（选择选项2）")
             return
 
         # 等待用户完成人工核查
@@ -178,6 +216,11 @@ class EverifyApplication:
         else:
             logger.error(result.error)
 
+    def _perform_manage_templates(self):
+        """执行模板管理操作"""
+        logger.info("开始管理用户自定义模板...")
+        self.template_manager.manage_user_templates()
+
     def _load_existing_reports(self):
         """从报告目录加载已存在的报告文件"""
         report_dir = self.config.reports_dir
@@ -190,7 +233,7 @@ class EverifyApplication:
         self.report_paths = {}
         for entity in self.entities:
             # 生成预期的报告文件名（使用与 generate_report 相同的命名规则）
-            from everify.utils.file import clean_filename
+            from everify.common.file import clean_filename
             expected_filename = f"{clean_filename(entity)} 诚信核查.docx"
             report_path = report_dir / expected_filename
 

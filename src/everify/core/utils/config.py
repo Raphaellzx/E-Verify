@@ -42,14 +42,29 @@ class VerifyTemplate(BaseModel):
     InsertContext: str = "网页核查"
 
 
+from pathlib import Path
+from datetime import datetime
+import os
+
+# 获取用户的图片文件夹和文档文件夹路径
+if os.name == 'nt':  # Windows
+    import winreg
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders") as key:
+        pictures_folder = Path(winreg.QueryValueEx(key, "My Pictures")[0])
+        documents_folder = Path(winreg.QueryValueEx(key, "Personal")[0])
+else:  # macOS or Linux
+    pictures_folder = Path.home() / "Pictures"
+    documents_folder = Path.home() / "Documents"
+
+
 class AppConfig(BaseModel):
     """应用程序配置"""
     browser: BrowserConfig = BrowserConfig()
     watermark: WatermarkConfig = WatermarkConfig()
     # 输出路径配置（直接在AppConfig中定义，不再使用OutputConfig子模型）
     output_dir: Path = Path("output")
-    screenshots_dir: Path = Path("output") / "screenshots"
-    reports_dir: Path = Path("output") / "reports"
+    screenshots_dir: Path = pictures_folder / "Everify Screenshots"
+    reports_dir: Path = documents_folder / "Everify Reports"
     temp_dir: Path = Path("output") / "temp"
     templates: Dict[str, VerifyTemplate] = {}
     templates_path: Optional[Path] = None
@@ -65,14 +80,18 @@ class AppConfig(BaseModel):
         """加载核查模板
 
         Args:
-            template_file: 模板配置文件路径（可选，默认加载项目根目录下的 templates.json）
+            template_file: 模板配置文件路径（可选，默认加载 data 目录下的 templates.json）
         """
         global logger
         if logger is None:
             from everify.core.utils import logger
 
         if template_file is None:
-            template_file = Path("templates.json")
+            # 默认从 src/everify/core/data/ 目录加载
+            import sys
+            from pathlib import Path
+            current_dir = Path(__file__).parent
+            template_file = current_dir / "data" / "templates.json"
 
         if not template_file.exists():
             if logger:

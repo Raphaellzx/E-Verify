@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from pathlib import Path
 import re
 from datetime import datetime
-from loguru import logger
+from everify.core.utils import logger
 
 # 从 file.py 导入所有函数
 from .file import (

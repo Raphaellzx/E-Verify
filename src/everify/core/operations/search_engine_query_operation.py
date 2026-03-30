@@ -2,7 +2,7 @@
 搜索引擎查询操作模型
 负责执行搜索引擎查询任务，如百度搜索主体相关信息
 """
-from everify.core.models.base_operation import BaseOperation, OperationResult
+from everify.core.operations.base_operation import BaseOperation, OperationResult
 from everify.core.base.browser import BrowserEngine
 from everify.core.services.report_generator import ReportGenerator
 from everify.core.utils.config import AppConfig
@@ -47,9 +47,12 @@ class SearchEngineQueryOperation(BaseOperation):
             # 生成搜索引擎查询报告
             report_paths = self.report_generator.generate_search_engine_report(results)
 
+            # 将 Path 对象转换为字符串，以便能够序列化为 JSON
+            str_report_paths = {entity: str(path) for entity, path in report_paths.items()}
+
             return OperationResult.success_result({
                 'results': results,
-                'report_paths': report_paths,
+                'report_paths': str_report_paths,
                 'message': f"搜索引擎查询完成！共查询 {len(entities)} 个主体，报告已生成"
             })
         except Exception as e:
@@ -81,7 +84,7 @@ class SearchEngineQueryOperation(BaseOperation):
             entity_results = {}
 
             # 为每个主体创建一个子文件夹
-            from everify.utils.file import clean_filename
+            from everify.common.file import clean_filename
             entity_dir = search_screenshots_dir / clean_filename(entity)
             entity_dir.mkdir(exist_ok=True)
 

@@ -2,9 +2,9 @@
 操作工厂类
 负责创建不同类型的操作实例
 """
-from everify.core.models.auto_verify_operation import AutoVerifyOperation
-from everify.core.models.manual_screenshot_operation import ManualScreenshotOperation
-from everify.core.models.search_engine_query_operation import SearchEngineQueryOperation
+from everify.core.operations.auto_verify_operation import AutoVerifyOperation
+from everify.core.operations.manual_screenshot_operation import ManualScreenshotOperation
+from everify.core.operations.search_engine_query_operation import SearchEngineQueryOperation
 from everify.core.services.url_generator import URLGenerator
 from everify.core.services.verify_service import VerifyService
 from everify.core.services.report_generator import ReportGenerator

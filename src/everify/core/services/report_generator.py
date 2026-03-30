@@ -57,6 +57,12 @@ class ReportGenerator:
             except Exception as e:
                 logger.error(f"主体 '{entity}' 报告生成失败: {e}")
 
+        # 检查是否生成了报告
+        if report_paths:
+            logger.info(f"报告生成成功，共生成 {len(report_paths)} 个报告")
+        else:
+            logger.warning("未能生成任何有效报告")
+
         return report_paths
 
     def _generate_single_report(
@@ -75,7 +81,7 @@ class ReportGenerator:
         Returns:
             Path: 报告文件路径
         """
-        from everify.utils.file import clean_filename
+        from everify.common.file import clean_filename
 
         # 创建文档
         from datetime import datetime
@@ -262,7 +268,7 @@ class ReportGenerator:
         Returns:
             Path: 报告文件路径
         """
-        from everify.utils.file import clean_filename
+        from everify.common.file import clean_filename
 
         # 创建文档
         from datetime import datetime
