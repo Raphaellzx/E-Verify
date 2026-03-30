@@ -42,6 +42,11 @@ class EntityManager:
         validated = []
         for entity in entities:
             entity = entity.strip()
+            # 替换任何剩余的制表符为空格
+            entity = entity.replace('\t', ' ')
+            # 压缩连续的空格
+            import re
+            entity = re.sub(r'\s+', ' ', entity)
             if entity and len(entity) <= 100:  # 合理的长度限制
                 validated.append(entity)
             else:

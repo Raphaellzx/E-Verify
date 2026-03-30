@@ -192,6 +192,12 @@
                             <div class="result-name">{{ entity }} 诚信核查报告</div>
                             <div class="result-time">{{ current_time }}</div>
                         </div>
+                        <div class="result-actions">
+                            <button class="btn btn-sm btn-primary" onclick="downloadReport('{{ entity }}')">
+                                <i class="fas fa-download"></i>
+                                下载
+                            </button>
+                        </div>
                     </div>
                     {% endfor %}
                     {% else %}
@@ -607,6 +613,51 @@ function openFolder() {
     })
     .catch(error => {
         alert('打开文件夹失败: ' + error.message);
+    });
+}
+
+function downloadReport(reportName) {
+    // 下载报告
+    fetch('/api/report/download', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({report_name: reportName})
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP 错误：${response.status} ${response.statusText}`);
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        // 创建下载链接
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+
+        // 确定文件名，使用与报告生成时相同的格式（包含日期）
+        const currentDate = new Date().toISOString().slice(0, 10).replace(/-/g, ''); // 格式：YYYYMMDD
+        let filename = `${reportName} 诚信核查报告${currentDate}.docx`;
+
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+
+        // 清理
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    })
+    .catch(error => {
+        console.error('下载报告失败:', error);
+        let errorMessage = '下载报告失败';
+        if (error.message === 'Failed to fetch') {
+            errorMessage = '网络请求失败，请检查服务器是否正常运行';
+        } else if (error.message.includes('HTTP')) {
+            errorMessage = '服务器响应错误：' + error.message;
+        } else {
+            errorMessage = '下载报告失败：' + error.message;
+        }
+        alert(errorMessage);
     });
 }
 

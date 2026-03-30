@@ -279,9 +279,23 @@ def main() -> None:
     if args.templates:
         config.templates_path = Path(args.templates)
 
-    # 创建应用程序实例并运行
-    app = EverifyApplication(config)
-    app.run(args.entities)
+    # 显示启动模式选择菜单
+    print("请选择启动模式:")
+    print("1. 前端版（Web UI）")
+    print("2. 后端版（CLI）")
+    choice = input("请输入选择 (1 或 2): ").strip()
+
+    if choice == "1":
+        # 启动前端版（Web UI）
+        from everify.web import main as web_main
+        web_main()
+    elif choice == "2":
+        # 启动后端版（CLI）
+        app = EverifyApplication(config)
+        app.run(args.entities)
+    else:
+        print("无效的选择，请输入 1 或 2")
+        return
 
 
 if __name__ == "__main__":

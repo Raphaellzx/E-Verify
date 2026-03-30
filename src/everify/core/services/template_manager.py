@@ -68,7 +68,14 @@ class TemplateManager:
 
     def _load_default_templates(self) -> None:
         """加载默认模板 - 从数据目录下的 templates.json 文件加载"""
-        default_templates_path = Path(__file__).parent.parent / "data" / "templates.json"
+        # 检查是否是打包后的exe文件
+        import sys
+        if getattr(sys, 'frozen', False):
+            # 如果是打包后的exe文件，使用sys._MEIPASS访问打包时包含的数据文件
+            default_templates_path = Path(sys._MEIPASS) / "src" / "everify" / "core" / "data" / "templates.json"
+        else:
+            # 如果是开发环境，使用相对路径
+            default_templates_path = Path(__file__).parent.parent / "data" / "templates.json"
 
         if default_templates_path.exists():
             try:
@@ -216,11 +223,9 @@ class TemplateManager:
             str: 分类的显示名称
         """
         category_names = {
-            "government": "政府网站",
-            "association": "协会/行业组织",
-            "search": "搜索引擎",
-            "custom": "用户自定义",
-            "general": "通用"
+            "automated": "自动核查",
+            "manual": "人工核查",
+            "custom": "用户自定义"
         }
         return category_names.get(category, category)
 

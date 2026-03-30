@@ -27,7 +27,7 @@ uv run python web/app.py            # Flask app directly (backward compatibility
 
 # Run tests
 uv run python -m pytest tests/ -v
-uv run python -m pytest tests/test_entity_manager.py -v  # Single test file
+uv run python -m pytest tests/test_template_manager.py -v  # Single test file
 ```
 
 ## Project Structure
@@ -40,11 +40,27 @@ d:\Coding\Python\2、Everify-project\
 │   ├── common/                 # Common utilities (previously utils/)
 │   │   └── file.py             # File operations utility
 │   ├── core/                   # Business logic layer
-│   │   ├── services/           # Core services (6 main services)
-│   │   ├── operations/         # Operation patterns (previously models/)
-│   │   ├── base/               # Low-level engines (browser, doc, image)
+│   │   ├── services/           # Core services (5 main services)
+│   │   │   ├── entity_manager.py        # Entity input, validation, batch loading
+│   │   │   ├── template_manager.py      # Loads default + user templates
+│   │   │   ├── url_generator.py         # Creates concrete URLs from templates
+│   │   │   ├── verify_service.py        # Async browser automation
+│   │   │   └── report_generator.py      # Generates watermarked Word reports
+│   │   ├── operations/         # Operation patterns (command pattern)
+│   │   │   ├── base_operation.py           # Base operation class
+│   │   │   ├── auto_verify_operation.py    # Auto-verification operations
+│   │   │   ├── manual_screenshot_operation.py  # Manual screenshot insertion
+│   │   │   ├── search_engine_query_operation.py  # Search engine queries
+│   │   │   └── operation_factory.py        # Operation factory
+│   │   ├── base/               # Low-level engines
+│   │   │   ├── browser.py   # Playwright-powered browser automation
+│   │   │   ├── document.py  # Word document generation (python-docx)
+│   │   │   └── image.py     # Pillow-based image processing
 │   │   ├── utils/              # Core utilities and config
+│   │   │   ├── config.py    # AppConfig and VerifyTemplate
+│   │   │   └── logger.py    # Logging setup
 │   │   └── data/               # Default templates
+│   │       └── templates.json  # Pre-configured verification templates
 │   └── __init__.py             # Package configuration
 ├── web/                        # Web frontend resources (backward compatibility)
 │   ├── templates/              # HTML templates
@@ -58,19 +74,27 @@ d:\Coding\Python\2、Everify-project\
 │   ├── launcher.py             # Unified launcher (web/cli switcher)
 │   └── run_flask.py            # Flask server startup (legacy)
 ├── tests/                      # Test suite
+│   └── test_template_manager.py  # Tests for template management
+├── output/                     # Runtime output directory
+│   ├── reports/                # Generated Word reports
+│   ├── screenshots/            # Captured screenshots
+│   ├── temp/                   # Temporary files
+│   └── logs/                   # Log files
 ├── start_app.bat               # Easy Windows startup script
 ├── pyproject.toml              # Project configuration
+├── uv.lock                     # uv dependency lock file
+├── user_templates.json         # User-customized verification templates
 └── README.md                   # Full documentation
 ```
 
 ## Core Services
 
 ### Service Layer (`core/services/`)
-- `entity_manager.py`: Entity input, validation, batch loading from files
-- `template_manager.py`: Loads default + user templates, interactive template selection
+- `entity_manager.py`: Collects, manages, and validates entity information from user input or files
+- `template_manager.py`: Loads default + user templates, interactive template selection, template management
 - `url_generator.py`: Creates concrete URLs from templates and entity names
-- `verify_service.py`: Async browser automation with concurrent verification
-- `report_generator.py`: Generates watermarked Word reports with screenshots
+- `verify_service.py`: Async browser automation with concurrent verification using Playwright
+- `report_generator.py`: Generates watermarked Word reports with screenshots using python-docx
 
 ### Base Engines (`core/base/`)
 - `browser.py`: Playwright-powered browser automation with headless support
@@ -120,7 +144,7 @@ Templates are stored in `src/everify/core/data/templates.json` (default) and `us
 - `name`: Template name
 - `description`: Template description
 - `url_pattern`: URL with `{}` as entity name placeholder
-- `category`: Classification (government/association/search)
+- `category`: Classification (automated/manual/custom)
 - `InsertContext`: Report section title
 
 ## Web UI Features
@@ -191,13 +215,8 @@ Integrity Check Workflow:
 
 ## Testing Structure
 
-Tests may be located in `tests/` directory (if present):
-- `test_entity_manager.py`: Tests for entity management
-- `test_template_manager.py`: Tests for template handling
-- `test_document_engine.py`: Tests for document generation
-- `test_url_generator.py`: Tests for URL pattern processing
-- `test_routes.py`: Tests for Flask routes
-- `test_verify_api.py`: Tests for API endpoints
+Tests are located in `tests/` directory:
+- `test_template_manager.py`: Tests for template management (load, save, delete, categories)
 
 ## Technical Stack
 
@@ -241,7 +260,7 @@ from everify.core.services.entity_manager import EntityManager
 from everify.core.services.template_manager import TemplateManager
 
 # Core utilities
-from everify.core.utils.config import AppConfig
+from everify.core.utils.config import AppConfig, VerifyTemplate
 from everify.core.utils import logger
 
 # Base engines
@@ -258,7 +277,7 @@ Everify provides multiple entry points for different use cases:
 - **`everify` / `everify-cli`**: Command-line interface (CLI) mode
   - Module: `everify.main:main`
   - File: `src/everify/main.py`
-  - Provides interactive command-line workflow
+  - Provides interactive command-line workflow with menu-based operations
 
 - **`everify-web`**: Web interface mode
   - Module: `everify.web:main`
@@ -295,3 +314,53 @@ from everify.main import main
 - `web/app.py` maintained as backward compatibility wrapper
 - `pyproject.toml` updated with correct script references
 - All entry points now consistently located in `src/everify/` package
+
+## Key Classes and Methods
+
+### EntityManager (entity_manager.py)
+```python
+class EntityManager:
+    @staticmethod
+    def get_entities_from_input() -> List[str]:
+        """Get entities from command-line input (enter # to stop)"""
+
+    @staticmethod
+    def validate_entities(entities: List[str]) -> List[str]:
+        """Validate and clean entity list"""
+
+    @staticmethod
+    def load_entities_from_file(file_path: str) -> List[str]:
+        """Load entities from a text file"""
+```
+
+### TemplateManager (template_manager.py)
+```python
+class TemplateManager:
+    def load_templates(self) -> Dict[str, VerifyTemplate]:
+        """Load all templates (default + user)"""
+
+    def save_user_template(self, name: str, template: VerifyTemplate) -> bool:
+        """Save a user-customized template"""
+
+    def delete_user_template(self, name: str) -> bool:
+        """Delete a user-customized template"""
+
+    def get_templates_by_category(self, category: str) -> Dict[str, VerifyTemplate]:
+        """Get templates by category"""
+
+    def select_templates_interactively(self) -> Dict[str, VerifyTemplate]:
+        """Interactive template selection"""
+
+    def search_templates(self, keyword: str) -> Dict[str, VerifyTemplate]:
+        """Search templates by keyword"""
+```
+
+### VerifyTemplate (config.py)
+```python
+class VerifyTemplate(BaseModel):
+    name: str
+    description: str
+    url_pattern: str
+    category: str
+    InsertContext: str
+```

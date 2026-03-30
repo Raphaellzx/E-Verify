@@ -226,31 +226,95 @@ class ReportGenerator:
     def generate_search_engine_report(
         self,
         search_results: Dict[str, Dict[str, str]],
-        output_path: Optional[Path] = None
+        output_path: Optional[Path] = None,
+        single_report: bool = True
     ) -> Dict[str, Path]:
         """生成搜索引擎查询结果的报告
 
         Args:
             search_results: 搜索引擎查询结果 {主体名称: {关键词: 截图路径}}
             output_path: 报告输出路径
+            single_report: 是否生成单一报告（包含所有主体），还是每个主体单独生成报告
 
         Returns:
-            dict: {主体名称: 报告文件路径}
+            dict: {主体名称或报告名称: 报告文件路径}
         """
         output_dir = output_path or self.config.reports_dir
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        report_paths = {}
+        if single_report:
+            # 生成单一报告，包含所有主体
+            report_path = self._generate_single_report_for_all_entities(search_results, output_dir)
+            return {"all_entities": report_path}
+        else:
+            # 为每个主体单独生成报告
+            report_paths = {}
+            for entity, entity_results in search_results.items():
+                try:
+                    report_path = self._generate_single_search_engine_report(entity, entity_results, output_dir)
+                    report_paths[entity] = report_path
+                    logger.info(f"主体 '{entity}' 搜索引擎查询报告生成成功: {report_path}")
+                except Exception as e:
+                    logger.error(f"主体 '{entity}' 搜索引擎查询报告生成失败: {e}")
+            return report_paths
 
+    def _generate_single_report_for_all_entities(
+        self,
+        search_results: Dict[str, Dict[str, str]],
+        output_dir: Path
+    ) -> Path:
+        """为所有主体生成单一的搜索引擎查询报告
+
+        Args:
+            search_results: 搜索引擎查询结果 {主体名称: {关键词: 截图路径}}
+            output_dir: 输出目录
+
+        Returns:
+            Path: 报告文件路径
+        """
+        from everify.common.file import clean_filename
+        from datetime import datetime
+
+        current_date = datetime.now().strftime("%Y%m%d")
+        title = f"涉贿核查报告{current_date}"
+        self.document_engine.create_document(title)
+        self.document_engine.add_title(title, level=1)
+
+        # 定义需要搜索的关键词
+        search_keywords = ['舆情', '查封', '冻结', '收购']
+
+        # 为每个主体添加章节
         for entity, entity_results in search_results.items():
-            try:
-                report_path = self._generate_single_search_engine_report(entity, entity_results, output_dir)
-                report_paths[entity] = report_path
-                logger.info(f"主体 '{entity}' 搜索引擎查询报告生成成功: {report_path}")
-            except Exception as e:
-                logger.error(f"主体 '{entity}' 搜索引擎查询报告生成失败: {e}")
+            # 添加主体名称作为章节标题
+            self.document_engine.add_title(f"{entity} 搜索结果", level=2)
 
-        return report_paths
+            # 为每个关键词添加子章节
+            for keyword in search_keywords:
+                self.document_engine.add_title(f"公司{keyword}情况", level=3)
+
+                if keyword in entity_results:
+                    screenshot_path = entity_results[keyword]
+                    if screenshot_path and Path(screenshot_path).exists():
+                        # 添加水印
+                        watermarked_path = self._add_watermark(screenshot_path, entity)
+                        self.document_engine.add_image(Path(watermarked_path))
+                    else:
+                        self.document_engine.add_paragraph("未找到截图")
+                else:
+                    self.document_engine.add_paragraph("未找到搜索结果")
+
+            # 添加分隔线
+            self.document_engine.add_paragraph("")
+            self.document_engine.add_paragraph("-" * 50)
+            self.document_engine.add_paragraph("")
+
+        # 保存文档
+        filename = f"涉贿核查报告{current_date}.docx"
+        report_path = output_dir / filename
+        self.document_engine.save_document(report_path)
+
+        logger.info(f"涉贿核查报告生成成功: {report_path}")
+        return report_path
 
     def _generate_single_search_engine_report(
         self,

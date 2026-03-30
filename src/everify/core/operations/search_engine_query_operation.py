@@ -44,11 +44,11 @@ class SearchEngineQueryOperation(BaseOperation):
         try:
             results = asyncio.run(self._async_execute(entities))
 
-            # 生成搜索引擎查询报告
-            report_paths = self.report_generator.generate_search_engine_report(results)
+            # 生成单一的搜索引擎查询报告
+            report_paths = self.report_generator.generate_search_engine_report(results, single_report=True)
 
             # 将 Path 对象转换为字符串，以便能够序列化为 JSON
-            str_report_paths = {entity: str(path) for entity, path in report_paths.items()}
+            str_report_paths = {name: str(path) for name, path in report_paths.items()}
 
             return OperationResult.success_result({
                 'results': results,

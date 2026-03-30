@@ -9,9 +9,23 @@ from everify.core.utils.config import AppConfig
 from everify.core.utils import logger
 from pathlib import Path
 
+import sys
+from pathlib import Path
+
+# 检查是否是打包后的exe文件
+if getattr(sys, 'frozen', False):
+    # 如果是打包后的exe文件，使用sys._MEIPASS访问打包时包含的数据文件
+    base_dir = Path(sys._MEIPASS)
+    template_dir = base_dir / 'web' / 'templates'
+    static_dir = base_dir / 'web' / 'static'
+else:
+    # 如果是开发环境，使用相对路径
+    template_dir = str(Path(__file__).parent.parent.parent / 'web' / 'templates')
+    static_dir = str(Path(__file__).parent.parent.parent / 'web' / 'static')
+
 app = Flask(__name__,
-            template_folder=str(Path(__file__).parent.parent.parent / 'web' / 'templates'),
-            static_folder=str(Path(__file__).parent.parent.parent / 'web' / 'static'))
+            template_folder=template_dir,
+            static_folder=static_dir)
 app.secret_key = 'everify_flask_app_secret_key_12345'
 
 # 初始化项目组件
@@ -94,10 +108,18 @@ def entities():
     if request.method == 'POST':
         entities = request.form.get('entities', '').strip()
         if entities:
-            entity_list = [e.strip() for e in entities.split('\n') if e.strip()]
-            validated_entities = em.validate_entities(entity_list)
-            session['entities'] = validated_entities
-            return jsonify({'status': 'success', 'count': len(validated_entities)})
+            try:
+                # 处理不同的换行符格式（Windows: \r\n, Unix: \n, Mac: \r）
+                normalized_entities = entities.replace('\r\n', '\n').replace('\r', '\n')
+                # 处理制表符，将其转换为空格，以便正确分割
+                normalized_entities = normalized_entities.replace('\t', ' ')
+                entity_list = [e.strip() for e in normalized_entities.split('\n') if e.strip()]
+                validated_entities = em.validate_entities(entity_list)
+                session['entities'] = validated_entities
+                return jsonify({'status': 'success', 'count': len(validated_entities)})
+            except Exception as e:
+                logger.error(f"处理主体输入时出错: {e}")
+                return jsonify({'status': 'error', 'message': f'处理主体输入时出错: {str(e)}'})
         else:
             return jsonify({'status': 'error', 'message': '请输入需要核查的主体'})
 
@@ -242,7 +264,7 @@ def add_user_template():
         name = data.get('name')
         description = data.get('description')
         url_pattern = data.get('url_pattern')
-        category = data.get('category', 'custom')
+        category = data.get('templateType', 'custom')  # 改为使用 templateType 字段
 
         if not all([name, description, url_pattern]):
             return jsonify({'status': 'error', 'message': '模板名称、描述和URL模式不能为空'})
@@ -278,7 +300,7 @@ def update_user_template(name):
         data = request.json
         description = data.get('description')
         url_pattern = data.get('url_pattern')
-        category = data.get('category', 'custom')
+        category = data.get('templateType', 'custom')  # 改为使用 templateType 字段
 
         from everify.core.utils.config import VerifyTemplate
         # 插入上下文默认使用模板名称（英文）
@@ -383,6 +405,39 @@ def open_screenshots_folder():
     except Exception as e:
         logger.error(f"打开截图文件夹失败: {e}")
         return jsonify({'status': 'error', 'message': f'打开截图文件夹失败: {str(e)}'})
+
+
+@app.route('/api/report/download', methods=['POST'])
+def download_report():
+    """API: 下载报告文件"""
+    try:
+        import json
+        data = request.get_json()
+        report_name = data.get('report_name')
+
+        report_paths = session.get('report_paths', {})
+
+        if report_name not in report_paths:
+            return jsonify({'status': 'error', 'message': '未找到指定的报告'})
+
+        report_path = report_paths[report_name]
+        report_path = Path(report_path)
+
+        if not report_path.exists():
+            return jsonify({'status': 'error', 'message': '报告文件不存在'})
+
+        # 使用send_file发送文件
+        from flask import send_file
+        return send_file(
+            str(report_path),
+            as_attachment=True,
+            download_name=report_path.name,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+    except Exception as e:
+        logger.error(f"下载报告失败: {e}")
+        import traceback
+        return jsonify({'status': 'error', 'message': f'下载报告失败: {str(e)}', 'stack': traceback.format_exc()})
 
 
 @app.route('/api/manual-verify/urls', methods=['GET'])

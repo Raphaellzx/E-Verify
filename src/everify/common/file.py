@@ -38,6 +38,13 @@ def sanitize_filename(filename: str, max_length: int = 100) -> str:
     Returns:
         str: 清理后的文件名
     """
+    # 替换制表符、换行符等非法空白字符，保留正常的空格
+    import re
+    filename = re.sub(r'[\t\n\r\f\v]', ' ', filename.strip())
+
+    # 压缩连续的空格
+    filename = re.sub(r'\s+', ' ', filename)
+
     # 替换无效字符
     invalid_chars = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
     for char in invalid_chars:
