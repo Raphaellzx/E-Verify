@@ -154,6 +154,7 @@ The Flask web application (http://127.0.0.1:5000) provides:
 - **Verification Execution**: Run automated checks with progress tracking
 - **Report Preview**: Download and preview generated reports
 - **Search Integration**: Search engine queries for additional context
+- **Custom Search Keywords**: Users can specify their own search keywords for more targeted results
 
 ## API Endpoints
 
@@ -238,8 +239,9 @@ Tests are located in `tests/` directory:
 ✅ **Template-Driven**: Configurable verification templates
 ✅ **Watermarked Reports**: Professional DOCX reports with timestamps
 ✅ **Flexible Input**: Single entity or bulk batch processing
-✅ **Search Integration**: Automated search engine queries
+✅ **Search Integration**: Automated search engine queries with custom search keywords
 ✅ **Customizable Templates**: Add/edit/delete user verification templates
+✅ **Custom Search Keywords**: Allow users to specify their own search keywords for more targeted results
 ✅ **Cross-Platform**: Windows, macOS, Linux compatible
 
 ## Import Path Conventions
