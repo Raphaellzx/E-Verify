@@ -266,6 +266,53 @@ body {
     line-height: 1.4;
 }
 
+/* 关键词配置区域样式 */
+.keywords-config {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.keywords-config h4 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.keywords-config .help-text {
+    margin-bottom: var(--spacing-md);
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+#keywords-input {
+    width: 100%;
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 120px;
+    transition: border-color 0.3s ease;
+}
+
+#keywords-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.keywords-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+    margin-top: var(--spacing-md);
+}
+
 /* 表单样式 */
 textarea {
     width: 100%;

@@ -19,24 +19,37 @@
 
     <!-- 步骤内容 -->
     <div class="step-content">
-        <!-- 步骤1：主体输入 -->
+        <!-- 步骤1：主体输入和关键词配置 -->
         <div id="step-1" class="step-container {{ 'active' if current_step == 1 else '' }}">
             <div class="card">
                 <h3>主体输入</h3>
                 <p class="help-text">请输入需要核查的主体名称，每个主体一行</p>
                 <form id="entities-form">
                     <textarea id="entities-input" name="entities"></textarea>
-                    <div class="form-actions">
+                        <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="clearEntities()">
-                            <i class="fas fa-times"></i>
-                            清空
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-play"></i>
-                            开始核查
+                            <i class="fas fa-times"></i>清空
                         </button>
                     </div>
                 </form>
+
+                <!-- 关键词配置区域 -->
+                <div class="keywords-config">
+                    <h4>搜索关键词配置</h4>
+                    <p class="help-text">自定义需要搜索的关键词，每个关键词一行</p>
+                    <textarea id="keywords-input" name="keywords" placeholder="舆情&#10;查封&#10;冻结&#10;收购"></textarea>
+                    <div class="keywords-actions">
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="resetKeywords()">
+                            <i class="fas fa-redo"></i>重置默认
+                        </button>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-primary" onclick="saveEntitiesAndStartVerification()">
+                            <i class="fas fa-play"></i>开始核查
+                        </button>
+                    </div>
+                </div>
+
                 <div id="entities-status"></div>
             </div>
         </div>
@@ -190,6 +203,9 @@ function saveEntitiesAndStartVerification() {
     const entities = document.getElementById('entities-input').value;
     const statusDiv = document.getElementById('entities-status');
 
+    // 获取自定义关键词
+    const searchKeywords = getSearchKeywords();
+
     // 先保存主体
     fetch('/entities', {
         method: 'POST',
@@ -211,8 +227,8 @@ function saveEntitiesAndStartVerification() {
                 </div>
             `;
 
-            // 立即开始核查
-            startVerification();
+            // 立即开始核查，传递自定义关键词
+            startVerification(searchKeywords);
         } else {
             statusDiv.innerHTML = `
                 <div class="error-message">
@@ -247,18 +263,29 @@ function clearEntities() {
 }
 
 // 执行核查功能
-function startVerification() {
+function startVerification(searchKeywords = null) {
     // 显示加载提示
-    const button = document.querySelector('.btn-primary[type="submit"]');
+    const button = document.querySelector('#step-1 .btn-primary');
+    if (!button) {
+        console.error('未找到开始核查按钮');
+        alert('未找到开始核查按钮');
+        return;
+    }
     const originalText = button.innerHTML;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 核查中...';
     button.disabled = true;
+
+    // 构建请求参数
+    const requestData = {};
+    if (searchKeywords) {
+        requestData.search_keywords = searchKeywords;
+    }
 
     // 调用 API 开始核查
     fetch('/api/bribery-verify/start', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({})
+        body: JSON.stringify(requestData)
     })
     .then(response => {
         if (!response.ok) {
@@ -404,6 +431,26 @@ function openFolder() {
     });
 }
 
+// 关键词配置功能
+function resetKeywords() {
+    const defaultKeywords = ['舆情', '查封', '冻结', '收购'];
+    document.getElementById('keywords-input').value = defaultKeywords.join('\n');
+}
+
+function getSearchKeywords() {
+    const keywordsInput = document.getElementById('keywords-input');
+    if (!keywordsInput) return null;
+
+    const keywordsText = keywordsInput.value.trim();
+    if (!keywordsText) return null;
+
+    const keywords = keywordsText.split(/[\n,;]/)
+        .map(k => k.trim())
+        .filter(k => k.length > 0);
+
+    return keywords.length > 0 ? keywords : null;
+}
+
 function downloadReport(reportName) {
     // 下载报告
     fetch('/api/report/download', {
@@ -425,7 +472,7 @@ function downloadReport(reportName) {
 
         // 确定文件名，使用与报告生成时相同的格式（包含日期）
         const currentDate = new Date().toISOString().slice(0, 10).replace(/-/g, ''); // 格式：YYYYMMDD
-        let filename = `涉贿核查报告${currentDate}.docx`;
+        let filename = `bribery_check_report${currentDate}.docx`;
         if (reportName !== 'all_entities') {
             filename = `${reportName} 涉贿核查报告${currentDate}.docx`;
         }

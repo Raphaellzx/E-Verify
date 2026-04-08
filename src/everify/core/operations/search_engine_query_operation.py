@@ -7,7 +7,7 @@ from everify.core.base.browser import BrowserEngine
 from everify.core.services.report_generator import ReportGenerator
 from everify.core.utils.config import AppConfig
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 import asyncio
 import urllib.parse
 
@@ -32,22 +32,32 @@ class SearchEngineQueryOperation(BaseOperation):
         self.report_generator = report_generator
         self.config = config
 
-    def execute(self, entities: List[str]) -> OperationResult:
+    def execute(
+        self,
+        entities: List[str],
+        search_keywords: Optional[List[str]] = None
+    ) -> OperationResult:
         """执行搜索引擎查询操作
 
         Args:
             entities: 需要查询的主体列表
+            search_keywords: 自定义搜索关键词（可选）
 
         Returns:
             OperationResult: 操作结果
         """
         try:
-            results = asyncio.run(self._async_execute(entities))
+            if search_keywords is None:
+                search_keywords = self.config.get_search_keywords()
 
-            # 生成单一的搜索引擎查询报告
-            report_paths = self.report_generator.generate_search_engine_report(results, single_report=True)
+            results = asyncio.run(self._async_execute(entities, search_keywords))
 
-            # 将 Path 对象转换为字符串，以便能够序列化为 JSON
+            report_paths = self.report_generator.generate_search_engine_report(
+                results,
+                single_report=True,
+                search_keywords=search_keywords
+            )
+
             str_report_paths = {name: str(path) for name, path in report_paths.items()}
 
             return OperationResult.success_result({
@@ -58,20 +68,22 @@ class SearchEngineQueryOperation(BaseOperation):
         except Exception as e:
             return OperationResult.error_result(f"搜索引擎查询操作执行失败: {str(e)}")
 
-    async def _async_execute(self, entities: List[str]) -> Dict:
+    async def _async_execute(
+        self,
+        entities: List[str],
+        search_keywords: List[str]
+    ) -> Dict:
         """异步执行搜索引擎查询操作
 
         Args:
             entities: 需要查询的主体列表
+            search_keywords: 搜索关键词列表
 
         Returns:
             Dict: 查询结果
         """
         # 初始化浏览器引擎
         await self.browser_engine.initialize()
-
-        # 定义需要搜索的关键词前缀
-        search_keywords = ['舆情', '查封', '冻结', '收购']
 
         results = {}
 

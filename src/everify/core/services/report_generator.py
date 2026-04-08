@@ -227,7 +227,8 @@ class ReportGenerator:
         self,
         search_results: Dict[str, Dict[str, str]],
         output_path: Optional[Path] = None,
-        single_report: bool = True
+        single_report: bool = True,
+        search_keywords: Optional[List[str]] = None
     ) -> Dict[str, Path]:
         """生成搜索引擎查询结果的报告
 
@@ -235,23 +236,34 @@ class ReportGenerator:
             search_results: 搜索引擎查询结果 {主体名称: {关键词: 截图路径}}
             output_path: 报告输出路径
             single_report: 是否生成单一报告（包含所有主体），还是每个主体单独生成报告
+            search_keywords: 搜索关键词列表（用于报告章节标题生成）
 
         Returns:
             dict: {主体名称或报告名称: 报告文件路径}
         """
+        if search_keywords is None:
+            search_keywords = ['舆情', '查封', '冻结', '收购']
+
         output_dir = output_path or self.config.reports_dir
         output_dir.mkdir(parents=True, exist_ok=True)
 
         if single_report:
-            # 生成单一报告，包含所有主体
-            report_path = self._generate_single_report_for_all_entities(search_results, output_dir)
+            report_path = self._generate_single_report_for_all_entities(
+                search_results,
+                output_dir,
+                search_keywords
+            )
             return {"all_entities": report_path}
         else:
-            # 为每个主体单独生成报告
             report_paths = {}
             for entity, entity_results in search_results.items():
                 try:
-                    report_path = self._generate_single_search_engine_report(entity, entity_results, output_dir)
+                    report_path = self._generate_single_search_engine_report(
+                        entity,
+                        entity_results,
+                        output_dir,
+                        search_keywords
+                    )
                     report_paths[entity] = report_path
                     logger.info(f"主体 '{entity}' 搜索引擎查询报告生成成功: {report_path}")
                 except Exception as e:
@@ -261,13 +273,15 @@ class ReportGenerator:
     def _generate_single_report_for_all_entities(
         self,
         search_results: Dict[str, Dict[str, str]],
-        output_dir: Path
+        output_dir: Path,
+        search_keywords: List[str]
     ) -> Path:
         """为所有主体生成单一的搜索引擎查询报告
 
         Args:
             search_results: 搜索引擎查询结果 {主体名称: {关键词: 截图路径}}
             output_dir: 输出目录
+            search_keywords: 搜索关键词列表
 
         Returns:
             Path: 报告文件路径
@@ -279,9 +293,6 @@ class ReportGenerator:
         title = f"涉贿核查报告{current_date}"
         self.document_engine.create_document(title)
         self.document_engine.add_title(title, level=1)
-
-        # 定义需要搜索的关键词
-        search_keywords = ['舆情', '查封', '冻结', '收购']
 
         # 为每个主体添加章节
         for entity, entity_results in search_results.items():
@@ -309,7 +320,7 @@ class ReportGenerator:
             self.document_engine.add_paragraph("")
 
         # 保存文档
-        filename = f"涉贿核查报告{current_date}.docx"
+        filename = f"bribery_check_report{current_date}.docx"
         report_path = output_dir / filename
         self.document_engine.save_document(report_path)
 
@@ -320,7 +331,8 @@ class ReportGenerator:
         self,
         entity: str,
         entity_results: Dict[str, str],
-        output_dir: Path
+        output_dir: Path,
+        search_keywords: List[str]
     ) -> Path:
         """为单个主体生成搜索引擎查询结果报告
 
@@ -328,6 +340,7 @@ class ReportGenerator:
             entity: 主体名称
             entity_results: 主体的搜索结果 {关键词: 截图路径}
             output_dir: 输出目录
+            search_keywords: 搜索关键词列表
 
         Returns:
             Path: 报告文件路径
@@ -342,9 +355,6 @@ class ReportGenerator:
 
         # 添加标题
         self.document_engine.add_title(title, level=1)
-
-        # 定义需要搜索的关键词
-        search_keywords = ['舆情', '查封', '冻结', '收购']
 
         # 添加搜索结果章节
         for keyword in search_keywords:

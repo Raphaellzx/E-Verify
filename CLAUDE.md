@@ -22,25 +22,23 @@ uv run python -m playwright install
 uv run everify                    # Unified entry point with mode selection
 uv run everify-web                # Web UI mode (direct)
 uv run everify-cli                # CLI mode (direct)
-uv run python src/everify/entrypoints/main.py --mode=web  # Web via entrypoint
-uv run python src/everify/entrypoints/main.py --mode=cli  # CLI via entrypoint
+uv run python src/everify/entrypoints/entrypoints.py --mode=web  # Web via entrypoint
+uv run python src/everify/entrypoints/entrypoints.py --mode=cli  # CLI via entrypoint
 uv run python web/app.py            # Flask app directly (backward compatibility)
 
 # Run tests
 uv run python -m pytest tests/ -v
-uv run python -m pytest tests/test_template_manager.py -v  # Single test file
 ```
 
 ## Project Structure
 
 ```
-d:\Coding\Python\2、Everify-project\
+Everify-project/
 ├── src/everify/                # Core application source
 │   ├── main.py                 # CLI application entry point
 │   ├── web.py                  # Web application entry point (Flask app)
 │   ├── entrypoints/            # Unified entry point module
 │   │   ├── entrypoints.py      # Main entry point with mode selection
-│   │   ├── main.py             # Entry point implementation
 │   │   └── __init__.py         # Package configuration
 │   ├── common/                 # Common utilities (previously utils/)
 │   │   └── file.py             # File operations utility
@@ -75,8 +73,7 @@ d:\Coding\Python\2、Everify-project\
 │   │   └── admin_templates.html  # Template management page
 │   ├── static/                 # Static assets (css, js)
 │   └── app.py                  # Backward compatibility file (imports from everify.web)
-├── tests/                      # Test suite
-│   └── test_template_manager.py  # Tests for template management
+├── tests/                      # Test suite (currently empty)
 ├── output/                     # Runtime output directory
 │   ├── reports/                # Generated Word reports
 │   ├── screenshots/            # Captured screenshots
@@ -277,20 +274,20 @@ Everify provides a unified entry point architecture with mode selection:
 
 ### Primary Entry Points (Package Scripts)
 - **`everify`**: Unified entry point with interactive mode selection
-  - Module: `everify.entrypoints.main:main`
-  - File: `src/everify/entrypoints/main.py`
+  - Module: `everify.entrypoints.entrypoints:main`
+  - File: `src/everify/entrypoints/entrypoints.py`
   - Provides mode selection (Web UI or CLI) on startup
   - Supports command-line arguments: `--mode`, `--port`, `--host`, `--verbose`
 
 - **`everify-web`**: Direct Web interface mode
-  - Module: `everify.entrypoints.main:main` (with mode=web)
-  - File: `src/everify/entrypoints/main.py`
+  - Module: `everify.entrypoints.entrypoints:main` (with mode=web)
+  - File: `src/everify/entrypoints/entrypoints.py`
   - Launches Flask web server on http://localhost:5000
   - Automatically opens browser on startup
 
 - **`everify-cli`**: Direct Command-line interface (CLI) mode
-  - Module: `everify.entrypoints.main:main` (with mode=cli)
-  - File: `src/everify/entrypoints/main.py`
+  - Module: `everify.entrypoints.entrypoints:main` (with mode=cli)
+  - File: `src/everify/entrypoints/entrypoints.py`
   - Provides interactive command-line workflow with menu-based operations
 
 ### Secondary Entry Points
@@ -307,7 +304,7 @@ from everify.web import app
 from everify.main import main
 
 # Import unified entry point
-from everify.entrypoints import main
+from everify.entrypoints.entrypoints import main
 ```
 
 ## Recent Changes

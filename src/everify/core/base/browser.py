@@ -69,11 +69,17 @@ class PlaywrightBrowser(BrowserEngine):
             self.playwright = await async_playwright().start()
             # 根据配置选择浏览器类型（默认为 Chromium）
             browser_type = "chromium"
-            # 启动浏览器
-            self.browser = await getattr(self.playwright, browser_type).launch(
-                headless=self.config.headless,
-                args=["--no-sandbox"]
-            )
+            # 启动浏览器，添加错误处理
+            try:
+                self.browser = await getattr(self.playwright, browser_type).launch(
+                    headless=self.config.headless,
+                    args=["--no-sandbox"]
+                )
+            except Exception as e:
+                logger.error(f"Playwright 浏览器引擎初始化失败: {e}")
+                logger.error("请确保已在打包前运行 'uv run python -m playwright install' 命令")
+                logger.error("或者，您可以在运行exe文件前先手动执行 'python -m playwright install'")
+                raise
             # 创建新页面
             self.page = await self.browser.new_page()
             # 设置视口大小
@@ -124,14 +130,14 @@ class PlaywrightBrowser(BrowserEngine):
             pass
 
     async def screenshot(self, path: Path, full_page: bool = False) -> Path:
-        """截图 - 设置固定尺寸为 1920×1200"""
+        """截图 - 设置固定尺寸为 1920×1080"""
         try:
             if not self.page:
                 logger.error("页面未初始化，无法截图")
                 return path
 
             # 设置固定的视口尺寸
-            await self.page.set_viewport_size({"width": 1920, "height": 1200})
+            await self.page.set_viewport_size({"width": 1920, "height": 1080})
             # 等待页面内容加载完成
             await asyncio.sleep(2)
             await self.page.screenshot(path=str(path), full_page=full_page)

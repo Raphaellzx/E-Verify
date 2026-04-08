@@ -132,6 +132,23 @@ class DocxDocumentEngine(DocumentEngine):
                         run._element.rPr.rFonts.set(self.qn('w:hAnsi'), 'Times New Roman')
                     run.font.size = self.Pt(12)  # 小四字体
                     run.font.color.rgb = self.RGBColor(0, 0, 0)  # 黑色
+            elif level == 3:
+                # 三级标题格式：小四字体，左对齐，1.5倍行距，首行缩进，黑色
+                heading.paragraph_format.alignment = self.WD_PARAGRAPH_ALIGNMENT.LEFT
+                heading.paragraph_format.line_spacing = 1.5
+                heading.paragraph_format.first_line_indent = self.Pt(14)  # 首行缩进2字符（小四字体）
+                heading.paragraph_format.space_after = self.Pt(6)
+
+                for run in heading.runs:
+                    if any('\u4e00' <= c <= '\u9fff' for c in run.text):  # 包含汉字
+                        run.font.name = '楷体'
+                        run._element.rPr.rFonts.set(self.qn('w:eastAsia'), '楷体')
+                    else:  # 英文或数字
+                        run.font.name = 'Times New Roman'
+                        run._element.rPr.rFonts.set(self.qn('w:ascii'), 'Times New Roman')
+                        run._element.rPr.rFonts.set(self.qn('w:hAnsi'), 'Times New Roman')
+                    run.font.size = self.Pt(12)  # 小四字体
+                    run.font.color.rgb = self.RGBColor(0, 0, 0)  # 黑色
 
             logger.debug(f"添加标题: {title} (级别: {level})")
         except Exception as e:

@@ -68,6 +68,24 @@ class AppConfig(BaseModel):
     temp_dir: Path = Path("output") / "temp"
     templates: Dict[str, VerifyTemplate] = {}
     templates_path: Optional[Path] = None
+    # 搜索引擎查询配置
+    search_keywords: List[str] = ['舆情', '查封', '冻结', '收购']
+
+    # 获取当前使用的关键词
+    def get_search_keywords(self):
+        return self.search_keywords.copy()
+
+    # 设置自定义关键词
+    def set_search_keywords(self, keywords: List[str]):
+        # 验证关键词格式，确保不为空且长度符合要求
+        if not all(isinstance(k, str) and len(k.strip()) > 0 for k in keywords):
+            raise ValueError("搜索关键词不能为空")
+
+        self.search_keywords = [k.strip() for k in keywords if len(k.strip()) > 0]
+
+    # 重置为默认关键词
+    def reset_search_keywords(self):
+        self.search_keywords = ['舆情', '查封', '冻结', '收购'].copy()
 
     def __post_init__(self):
         """初始化后确保所有目录存在"""

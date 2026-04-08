@@ -219,10 +219,6 @@
                         <i class="fas fa-folder-open"></i>
                         打开报告文件夹
                     </button>
-                    <button type="button" class="btn btn-primary">
-                        <i class="fas fa-redo"></i>
-                        重新核查
-                    </button>
                 </div>
             </div>
         </div>
@@ -294,7 +290,7 @@
                     </button>
                     <button type="button" class="btn btn-primary" onclick="startManualVerification()">
                         <i class="fas fa-check"></i>
-                        开始人工核查
+                        插入人工核查图片
                     </button>
                 </div>
             </div>
@@ -308,7 +304,7 @@
             上一个
         </button>
 
-        <button class="btn btn-primary" onclick="goToNextStep()">
+        <button class="btn btn-primary" onclick="goToNextStep()" id="next-button" disabled>
             <i class="fas fa-arrow-right"></i>
             下一个
         </button>
@@ -470,7 +466,13 @@ function saveEntities() {
 function clearEntities() {
     document.getElementById('entities-input').value = '';
     document.getElementById('entities-status').innerHTML = '';
-    document.getElementById('next-button').disabled = true;
+    // 查找"下一个"按钮并禁用（通过文本内容定位）
+    const nextButton = Array.from(document.querySelectorAll('.navigation-buttons .btn')).find(btn =>
+        btn.textContent.includes('下一个')
+    );
+    if (nextButton) {
+        nextButton.disabled = true;
+    }
 }
 
 // 模板选择功能
@@ -569,7 +571,13 @@ function startVerification() {
         .then(data => {
             if (data.status === 'success') {
                 alert(data.message);
-                document.getElementById('next-button').disabled = false;
+                // 查找"下一个"按钮并启用（通过文本内容定位）
+                const nextButton = Array.from(document.querySelectorAll('.navigation-buttons .btn')).find(btn =>
+                    btn.textContent.includes('下一个')
+                );
+                if (nextButton) {
+                    nextButton.disabled = false;
+                }
             } else {
                 alert('执行核查失败：' + data.message);
                 if (data.stack) {

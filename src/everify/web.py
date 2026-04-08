@@ -569,8 +569,12 @@ def start_bribery_verification():
         operation_factory = OperationFactory()
         search_operation = operation_factory.create_search_engine_query_operation(config)
 
+        # 获取自定义搜索关键词（可选）
+        data = request.get_json()
+        search_keywords = data.get('search_keywords', None)
+
         # 执行搜索引擎查询操作
-        result = search_operation.execute(entities)
+        result = search_operation.execute(entities, search_keywords)
 
         if result.success:
             # 保存报告路径到会话
