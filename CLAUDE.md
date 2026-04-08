@@ -19,10 +19,11 @@ uv sync
 uv run python -m playwright install
 
 # Run the application
-uv run everify                    # CLI mode (everify-cli alias also works)
-uv run everify-web                # Web UI mode (launches Flask app)
-uv run python scripts/launcher.py --mode=web   # Flask app via launcher
-uv run python scripts/launcher.py --mode=cli   # CLI via launcher
+uv run everify                    # Unified entry point with mode selection
+uv run everify-web                # Web UI mode (direct)
+uv run everify-cli                # CLI mode (direct)
+uv run python src/everify/entrypoints/main.py --mode=web  # Web via entrypoint
+uv run python src/everify/entrypoints/main.py --mode=cli  # CLI via entrypoint
 uv run python web/app.py            # Flask app directly (backward compatibility)
 
 # Run tests
@@ -37,6 +38,10 @@ d:\Coding\Python\2、Everify-project\
 ├── src/everify/                # Core application source
 │   ├── main.py                 # CLI application entry point
 │   ├── web.py                  # Web application entry point (Flask app)
+│   ├── entrypoints/            # Unified entry point module
+│   │   ├── entrypoints.py      # Main entry point with mode selection
+│   │   ├── main.py             # Entry point implementation
+│   │   └── __init__.py         # Package configuration
 │   ├── common/                 # Common utilities (previously utils/)
 │   │   └── file.py             # File operations utility
 │   ├── core/                   # Business logic layer
@@ -70,9 +75,6 @@ d:\Coding\Python\2、Everify-project\
 │   │   └── admin_templates.html  # Template management page
 │   ├── static/                 # Static assets (css, js)
 │   └── app.py                  # Backward compatibility file (imports from everify.web)
-├── scripts/                    # Launch scripts
-│   ├── launcher.py             # Unified launcher (web/cli switcher)
-│   └── run_flask.py            # Flask server startup (legacy)
 ├── tests/                      # Test suite
 │   └── test_template_manager.py  # Tests for template management
 ├── output/                     # Runtime output directory
@@ -271,25 +273,27 @@ from everify.core.base.image import PillowImageEngine
 
 ## Program Entry Points
 
-Everify provides multiple entry points for different use cases:
+Everify provides a unified entry point architecture with mode selection:
 
 ### Primary Entry Points (Package Scripts)
-- **`everify` / `everify-cli`**: Command-line interface (CLI) mode
-  - Module: `everify.main:main`
-  - File: `src/everify/main.py`
-  - Provides interactive command-line workflow with menu-based operations
+- **`everify`**: Unified entry point with interactive mode selection
+  - Module: `everify.entrypoints.main:main`
+  - File: `src/everify/entrypoints/main.py`
+  - Provides mode selection (Web UI or CLI) on startup
+  - Supports command-line arguments: `--mode`, `--port`, `--host`, `--verbose`
 
-- **`everify-web`**: Web interface mode
-  - Module: `everify.web:main`
-  - File: `src/everify/web.py`
+- **`everify-web`**: Direct Web interface mode
+  - Module: `everify.entrypoints.main:main` (with mode=web)
+  - File: `src/everify/entrypoints/main.py`
   - Launches Flask web server on http://localhost:5000
   - Automatically opens browser on startup
 
-### Secondary Entry Points (Scripts)
-- **`scripts/launcher.py`**: Unified launcher with mode selection
-  - Supports both `--mode=cli` and `--mode=web`
-  - Additional options: `--port`, `--host`, `--verbose`
+- **`everify-cli`**: Direct Command-line interface (CLI) mode
+  - Module: `everify.entrypoints.main:main` (with mode=cli)
+  - File: `src/everify/entrypoints/main.py`
+  - Provides interactive command-line workflow with menu-based operations
 
+### Secondary Entry Points
 - **`web/app.py`**: Backward compatibility entry point
   - Simply imports and delegates to `everify.web`
   - Maintained for existing users and documentation
@@ -301,6 +305,9 @@ from everify.web import app
 
 # Import CLI main function for programmatic invocation
 from everify.main import main
+
+# Import unified entry point
+from everify.entrypoints import main
 ```
 
 ## Recent Changes

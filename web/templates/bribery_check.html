@@ -310,10 +310,77 @@ function refreshReportList() {
             </div>
         `;
 
-        // 重新加载页面以获取最新的报告信息
-        setTimeout(() => {
-            window.location.reload();
-        }, 1000);
+        // 发送API请求获取报告列表
+        fetch('/api/reports', {
+            method: 'GET',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP 错误：${response.status} ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                const reportPaths = data.report_paths;
+                updateResultsSection(reportPaths);
+            } else {
+                console.error('获取报告列表失败:', data.message);
+                resultsSection.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>加载报告列表失败: ${data.message}</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('获取报告列表失败:', error);
+            resultsSection.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>加载报告列表失败: ${error.message}</p>
+                </div>
+            `;
+        });
+    }
+}
+
+function updateResultsSection(reportPaths) {
+    const resultsSection = document.querySelector('.results-section');
+    if (!resultsSection) return;
+
+    if (Object.keys(reportPaths).length > 0) {
+        // 生成报告列表HTML
+        let html = '';
+        for (const [reportName, reportPath] of Object.entries(reportPaths)) {
+            const reportDisplayName = reportName === 'all_entities' ? '涉贿核查报告' : `${reportName} 涉贿核查报告`;
+            html += `
+                <div class="result-item">
+                    <i class="fas fa-file-word"></i>
+                    <div class="result-info">
+                        <div class="result-name">${reportDisplayName}</div>
+                        <div class="result-time">${new Date().toLocaleString('zh-CN')}</div>
+                    </div>
+                    <div class="result-actions">
+                        <button class="btn btn-sm btn-primary" onclick="downloadReport('${reportName}')">
+                            <i class="fas fa-download"></i>
+                            下载
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        resultsSection.innerHTML = html;
+    } else {
+        // 显示无报告信息
+        resultsSection.innerHTML = `
+            <div class="no-results">
+                <i class="fas fa-inbox"></i>
+                <p>暂无报告</p>
+            </div>
+        `;
     }
 }
 

@@ -440,6 +440,18 @@ def download_report():
         return jsonify({'status': 'error', 'message': f'下载报告失败: {str(e)}', 'stack': traceback.format_exc()})
 
 
+@app.route('/api/reports', methods=['GET'])
+def get_report_list():
+    """API: 获取报告列表"""
+    try:
+        report_paths = session.get('report_paths', {})
+        return jsonify({'status': 'success', 'report_paths': report_paths})
+    except Exception as e:
+        logger.error(f"获取报告列表失败: {e}")
+        import traceback
+        return jsonify({'status': 'error', 'message': f'获取报告列表失败: {str(e)}', 'stack': traceback.format_exc()})
+
+
 @app.route('/api/manual-verify/urls', methods=['GET'])
 def get_manual_verify_urls():
     """API: 获取所有需要人工核查的URL列表"""
