@@ -90,14 +90,6 @@ uv run python -m playwright install
 ## 使用方法
 
 ### 快速启动（推荐）
-
-#### 方法一：Windows 批处理脚本
-```bash
-# 双击运行
-start_app.bat
-```
-
-#### 方法二：项目入口文件（推荐）
 ```bash
 cd "d:\Coding\Python\2、Everify-project"
 uv sync
@@ -286,14 +278,7 @@ SCREENSHOTS_DIR=output/screenshots
 TEMP_DIR=output/temp
 ```
 
-## 开发与测试
-
-### 运行测试
-```bash
-uv run python -m pytest tests/ -v
-```
-
-### 项目依赖
+## 项目依赖
 ```
 playwright>=1.40.0       # 浏览器自动化
 python-docx>=0.8.11      # Word文档处理
@@ -310,8 +295,3 @@ flask>=3.0.0            # Web 框架
 3. **权限问题**：确保程序有写入输出目录的权限
 4. **截图格式**：支持PNG、JPG、JPEG、BMP格式的截图
 5. **报告格式**：生成的报告是.docx格式，需要Word或兼容软件打开
-
----
-
-**更新时间**：2026年2月1日
-**版本**：0.1.0
